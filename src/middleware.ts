@@ -1,7 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { COOKIE_NAME, verifyToken } from "@/lib/auth/jwt";
 
-const PUBLIC = ["/", "/login", "/register", "/api/auth/login", "/api/auth/register", "/api/seed"];
+const PUBLIC = [
+  "/",
+  "/login",
+  "/register",
+  "/api/auth/login",
+  "/api/auth/register",
+  "/api/seed",
+  "/api/uploads",
+];
 
 const ROLE_HOME = {
   superadmin: "/superadmin/dashboard",

@@ -5,6 +5,7 @@ import { DashboardShell } from "@/components/layout/DashboardShell";
 import { Table, Td } from "@/components/ui/Table";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { FileUpload } from "@/components/ui/FileUpload";
 import { useAuth } from "@/contexts/AuthContext";
 import { ageFromBirthday } from "@/lib/utils/dates";
 
@@ -167,12 +168,15 @@ export default function RecruiterAssessmentPage() {
               )}
             </Td>
             <Td>
-              <Input
-                className="min-w-40"
-                value={item.recordingUrl || ""}
-                onChange={(e) => updateLocal(item._id, { recordingUrl: e.target.value })}
-                placeholder="S3 / Drive URL"
-              />
+              <div className="min-w-56">
+                <FileUpload
+                  folder="recordings"
+                  accept="video/*,.mp4,.webm,.mov"
+                  label="Upload recording"
+                  value={item.recordingUrl || ""}
+                  onChange={(recordingUrl) => updateLocal(item._id, { recordingUrl })}
+                />
+              </div>
             </Td>
 
             {isTech ? (

@@ -30,6 +30,20 @@ Open [http://localhost:3000](http://localhost:3000)
 
 By default `USE_MEMORY_DB=true` seeds an in-memory MongoDB with demo data on first API call.
 
+### Persistent MongoDB (optional)
+
+```bash
+docker compose up -d
+```
+
+Then in `.env.local`:
+
+```env
+USE_MEMORY_DB=false
+MONGODB_URI=mongodb://127.0.0.1:27017/recruiter-system
+AUTO_SEED=true
+```
+
 ### Demo accounts
 
 | Role | Email | Password |
@@ -75,13 +89,17 @@ Only **URLs** for resumes/recordings are stored; binaries go to **AWS S3**.
 
 Configure in `.env.local`:
 
-- **S3**: `AWS_*` → `/api/uploads` returns presigned URLs
+- **S3**: `AWS_*` → `/api/uploads` returns presigned URLs (UI uploaders on candidate/recruiter/admin pages)
 - **Gmail/SMTP**: `SMTP_*` or Gmail OAuth vars
 - **Google Calendar**: `GOOGLE_*` + refresh token (demo Meet links if unset)
 - **Calendly**: `CALENDLY_TOKEN` + per-user Calendly URLs
 - **Slack**: `SLACK_BOT_TOKEN`
 
-Auto reminder job endpoint: `POST /api/jobs/reminders` (T-15 emails, T-5 join flags)
+Admin UI: `/admin/integrations` shows connection status and Calendly/Slack controls.
+
+Auto reminder job endpoint: `POST /api/jobs/reminders` (T-15 emails, T-5 join toasts)
+
+Interview join alerts poll every 30s in the dashboard shell for admin/recruiter/candidate roles.
 
 ## Scripts
 

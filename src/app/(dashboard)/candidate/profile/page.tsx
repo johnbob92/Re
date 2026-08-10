@@ -5,6 +5,7 @@ import { DashboardShell } from "@/components/layout/DashboardShell";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Field, Input } from "@/components/ui/Input";
+import { FileUpload } from "@/components/ui/FileUpload";
 
 export default function CandidateProfilePage() {
   const [form, setForm] = useState({
@@ -53,32 +54,6 @@ export default function CandidateProfilePage() {
     setMessage(res.ok ? "Profile saved" : data.error || "Failed");
   }
 
-  async function requestUpload() {
-    if (!form.resumeUrl.includes(".")) {
-      // helper to create presigned URL placeholder
-    }
-    const filename = prompt("Resume filename (e.g. resume.pdf)");
-    if (!filename) return;
-    const res = await fetch("/api/uploads", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        filename,
-        contentType: "application/pdf",
-        folder: "resumes",
-      }),
-    });
-    const data = await res.json();
-    if (data.publicUrl) {
-      setForm((prev) => ({ ...prev, resumeUrl: data.publicUrl }));
-      setMessage(
-        data.demo
-          ? "Demo S3 URL generated. Configure AWS credentials for real uploads."
-          : "Presigned upload URL ready — upload file then save profile."
-      );
-    }
-  }
-
   return (
     <DashboardShell title="My Profile" subtitle="Keep your contact details and resume URL up to date">
       <Card>
@@ -111,16 +86,14 @@ export default function CandidateProfilePage() {
               onChange={(e) => setForm({ ...form, experienceYears: e.target.value })}
             />
           </Field>
-          <Field label="Resume URL (S3)" className="md:col-span-2">
-            <div className="flex gap-2">
-              <Input
-                value={form.resumeUrl}
-                onChange={(e) => setForm({ ...form, resumeUrl: e.target.value })}
-              />
-              <Button type="button" variant="secondary" onClick={requestUpload}>
-                S3 URL
-              </Button>
-            </div>
+          <Field label="Resume (AWS S3)" className="md:col-span-2">
+            <FileUpload
+              folder="resumes"
+              accept=".pdf,.doc,.docx,application/pdf"
+              label="Upload resume"
+              value={form.resumeUrl}
+              onChange={(resumeUrl) => setForm({ ...form, resumeUrl })}
+            />
           </Field>
           <div className="md:col-span-2 flex items-center gap-3">
             <Button type="submit">Save</Button>

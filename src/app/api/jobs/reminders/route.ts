@@ -10,7 +10,7 @@ import { addMinutes } from "date-fns";
  * - 5 minutes before: mark join notification ready
  */
 export async function POST() {
-  return withAuth(["superadmin", "admin", "recruiter"], async () => {
+  return withAuth(["superadmin", "admin", "recruiter", "candidate"], async () => {
     const now = new Date();
     const in15 = addMinutes(now, 15);
     const in5 = addMinutes(now, 5);

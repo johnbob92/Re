@@ -5,6 +5,7 @@ import { DashboardShell } from "@/components/layout/DashboardShell";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Field, Input, Textarea, Select } from "@/components/ui/Input";
+import { FileUpload } from "@/components/ui/FileUpload";
 import { AVATAR_OPTIONS } from "@/data/avatars";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -135,11 +136,15 @@ export default function RecruiterProfilePage() {
                   placeholder="https://calendly.com/your-handle"
                 />
               </Field>
-              <Field label="Upload / custom avatar URL (S3)" className="md:col-span-2">
-                <Input
+              <Field label="Upload custom avatar (AWS S3)" className="md:col-span-2">
+                <FileUpload
+                  folder="avatars"
+                  accept="image/*"
+                  label="Upload avatar image"
                   value={form.customAvatarUrl}
-                  onChange={(e) => setForm({ ...form, customAvatarUrl: e.target.value })}
-                  placeholder="Paste uploaded S3 image URL"
+                  onChange={(customAvatarUrl) =>
+                    setForm({ ...form, customAvatarUrl, avatarUrl: customAvatarUrl || form.avatarUrl })
+                  }
                 />
               </Field>
             </div>

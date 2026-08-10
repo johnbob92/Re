@@ -17,6 +17,8 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { ThemeControls } from "@/components/theme/ThemeControls";
+import { ToastStack } from "@/components/ui/Toast";
+import { useInterviewAlerts } from "@/hooks/useInterviewAlerts";
 import { cn } from "@/lib/utils/cn";
 import type { UserRole } from "@/types";
 
@@ -31,6 +33,7 @@ const NAV: Record<UserRole, NavItem[]> = {
     { href: "/admin/candidates", label: "Candidates", icon: Users },
     { href: "/admin/recruiters", label: "Recruiters", icon: BriefcaseBusiness },
     { href: "/admin/calendar", label: "Calendar", icon: CalendarDays },
+    { href: "/admin/integrations", label: "Integrations", icon: Settings2 },
     { href: "/admin/profile", label: "Profile", icon: UserRound },
   ],
   recruiter: [
@@ -62,6 +65,9 @@ export function DashboardShell({
   const { user, logout } = useAuth();
   const pathname = usePathname();
   const items = user ? NAV[user.role] : [];
+  const alertsEnabled =
+    user?.role === "recruiter" || user?.role === "candidate" || user?.role === "admin";
+  const { toasts, dismiss } = useInterviewAlerts(Boolean(alertsEnabled));
 
   return (
     <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
@@ -164,6 +170,7 @@ export function DashboardShell({
           {children}
         </main>
       </div>
+      <ToastStack items={toasts} onDismiss={dismiss} />
     </div>
   );
 }

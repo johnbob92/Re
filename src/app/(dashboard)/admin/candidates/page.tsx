@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { CandidateStatusBadge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
 import { Field, Select, Textarea } from "@/components/ui/Input";
+import { FileUpload } from "@/components/ui/FileUpload";
 import { ageFromBirthday, formatDateTime } from "@/lib/utils/dates";
 import type { CandidateStatus } from "@/types";
 
@@ -49,6 +50,7 @@ export default function AdminCandidatesPage() {
   const [offerHtml, setOfferHtml] = useState(
     "<h2>Offer Letter</h2><p>We are delighted to offer you a position on our team.</p>"
   );
+  const [offerFileUrl, setOfferFileUrl] = useState("");
   const [message, setMessage] = useState("");
 
   async function load() {
@@ -89,7 +91,9 @@ export default function AdminCandidatesPage() {
         candidateId: candidate._id,
         action,
         techRecruiterId: techRecruiterId || undefined,
-        offerHtml,
+        offerHtml: offerFileUrl
+          ? `${offerHtml}<p><a href="${offerFileUrl}">Download offer letter</a></p>`
+          : offerHtml,
         ...extra,
       }),
     });
@@ -206,6 +210,11 @@ export default function AdminCandidatesPage() {
                     Send Offer
                   </Button>
                 ) : null}
+                {c.status === "offer_sent" || c.status === "final_pass" ? (
+                  <Button size="sm" variant="success" onClick={() => runAction(c, "mark_hired")}>
+                    Mark Hired
+                  </Button>
+                ) : null}
                 <Button size="sm" variant="danger" onClick={() => runAction(c, "fail_hr")}>
                   Fail
                 </Button>
@@ -317,9 +326,20 @@ export default function AdminCandidatesPage() {
           selected?.status === "final_pass" ||
           selected?.status === "offer_sent" ||
           selected?.status === "final_failed") && (
-          <Field label="Offer letter HTML">
-            <Textarea value={offerHtml} onChange={(e) => setOfferHtml(e.target.value)} />
-          </Field>
+          <div className="space-y-3">
+            <Field label="Offer letter HTML">
+              <Textarea value={offerHtml} onChange={(e) => setOfferHtml(e.target.value)} />
+            </Field>
+            <Field label="Offer letter file (AWS S3)">
+              <FileUpload
+                folder="offers"
+                accept=".pdf,.doc,.docx,application/pdf"
+                label="Upload offer PDF"
+                value={offerFileUrl}
+                onChange={setOfferFileUrl}
+              />
+            </Field>
+          </div>
         )}
 
         {selected?.hrScheduledAt ? (

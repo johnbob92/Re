@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/Button";
 import { Field, Input, Select, Textarea } from "@/components/ui/Input";
+import { FileUpload } from "@/components/ui/FileUpload";
 import { ThemeControls } from "@/components/theme/ThemeControls";
 import { useAuth } from "@/contexts/AuthContext";
 import type { UserRole } from "@/types";
@@ -284,12 +285,13 @@ export default function RegisterPage() {
                 required
               />
             </Field>
-            <Field label="Resume URL (S3)">
-              <Input
+            <Field label="Resume (AWS S3)" className="md:col-span-2">
+              <FileUpload
+                folder="resumes"
+                accept=".pdf,.doc,.docx,application/pdf"
+                label="Upload resume"
                 value={form.resumeUrl}
-                onChange={(e) => update("resumeUrl", e.target.value)}
-                required
-                placeholder="https://your-bucket.s3.amazonaws.com/resumes/..."
+                onChange={(resumeUrl) => update("resumeUrl", resumeUrl)}
               />
             </Field>
           </div>

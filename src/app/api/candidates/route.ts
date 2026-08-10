@@ -10,6 +10,7 @@ import {
 import { sendEmail } from "@/lib/email/send";
 import { DEFAULT_NOTIFICATION_TEMPLATES, renderTemplate } from "@/data/sample-messages";
 import { ageFromBirthday } from "@/lib/utils/dates";
+import { bumpRecruiterHireStats } from "@/lib/performance";
 import type { CandidateStatus } from "@/types";
 
 export async function GET(req: NextRequest) {
@@ -68,6 +69,7 @@ const actionSchema = z.object({
     "decline",
     "assign_recruiter",
     "send_offer",
+    "mark_hired",
   ]),
   techRecruiterId: z.string().optional(),
   offerHtml: z.string().optional(),
@@ -213,6 +215,14 @@ export async function PATCH(req: NextRequest) {
           html: offerContent,
         });
         if (body.action === "pass_final") pushStatus("offer_sent", body.offerTitle);
+      }
+    }
+
+    if (body.action === "mark_hired") {
+      pushStatus("hired", "Offer accepted / marked hired by admin");
+      await bumpRecruiterHireStats(candidate.recruiterId);
+      if (candidate.techRecruiterId) {
+        await bumpRecruiterHireStats(candidate.techRecruiterId);
       }
     }
 
