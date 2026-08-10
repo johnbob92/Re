@@ -14,6 +14,7 @@ export type Permission =
   | "activity.view"
   | "analytics.view"
   | "integrations.manage"
+  | "chat.use"
   | "profile.self";
 
 const MATRIX: Record<UserRole, Permission[]> = {
@@ -33,15 +34,17 @@ const MATRIX: Record<UserRole, Permission[]> = {
     "activity.view",
     "analytics.view",
     "integrations.manage",
+    "chat.use",
     "profile.self",
   ],
   recruiter: [
     "assessments.write",
     "interviews.manage",
     "messages.view",
+    "chat.use",
     "profile.self",
   ],
-  candidate: ["offers.respond", "interviews.manage", "profile.self"],
+  candidate: ["offers.respond", "interviews.manage", "chat.use", "profile.self"],
 };
 
 export function permissionsFor(role: UserRole): Permission[] {

@@ -11,8 +11,10 @@ Clean, modern multi-tenant recruiting platform built with:
 
 1. **Super Admin** — manage all users (reset password / role / delete), global dashboard + graphs
 2. **Admin** — dashboard, company profile, recruiters, candidates pipeline, analytics, offer letters, calendar
-3. **Recruiter (HR / Tech)** — connected candidates, scheduled interviews, assessments, notification templates, calendar
-4. **Candidate** — register, schedule via Calendly, status tracking, calendar, join Meet at T-5
+3. **Recruiter (HR / Tech)** — connected candidates, scheduled interviews, assessments, chat, notification templates, calendar
+4. **Candidate** — public register (candidate-only), schedule via Calendly, status tracking, chat with recruiter, calendar, join Meet at T-5
+
+Public `/register` creates **candidates only**. Admin/recruiter roles are assigned by Super Admin (Managing users) or created via Admin recruiter invite flows.
 
 ## Hiring pipeline
 

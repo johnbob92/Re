@@ -1,7 +1,12 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { jsonOk, withAuth } from "@/lib/api";
-import { calendlyEmbedUrl, getCalendlyUser, normalizeCalendlyUrl } from "@/lib/calendly/client";
+import {
+  calendlyEmbedUrl,
+  getCalendlyUser,
+  isDemoCalendlyUrl,
+  normalizeCalendlyUrl,
+} from "@/lib/calendly/client";
 import { AdminProfile, RecruiterProfile } from "@/models";
 
 export async function GET() {
@@ -29,10 +34,12 @@ export async function GET() {
       }
     }
 
+    const demoEmbed = isDemoCalendlyUrl(schedulingUrl) || me.demo;
     return jsonOk({
       ...me,
+      demo: demoEmbed,
       schedulingUrl,
-      embedUrl: calendlyEmbedUrl(schedulingUrl),
+      embedUrl: demoEmbed ? "" : calendlyEmbedUrl(schedulingUrl),
     });
   });
 }

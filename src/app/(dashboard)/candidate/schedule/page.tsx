@@ -28,6 +28,7 @@ function toLocalInputValue(iso: string) {
 export default function CandidateSchedulePage() {
   const [embedUrl, setEmbedUrl] = useState("");
   const [schedulingUrl, setSchedulingUrl] = useState("");
+  const [calendlyDemo, setCalendlyDemo] = useState(false);
   const [candidateId, setCandidateId] = useState("");
   const [email, setEmail] = useState("");
   const [scheduledAt, setScheduledAt] = useState("");
@@ -63,8 +64,9 @@ export default function CandidateSchedulePage() {
       const c = await cRes.json();
       const p = await pRes.json();
       const i = await iRes.json();
-      setEmbedUrl(c.embedUrl);
-      setSchedulingUrl(c.schedulingUrl);
+      setEmbedUrl(c.embedUrl || "");
+      setSchedulingUrl(c.schedulingUrl || "");
+      setCalendlyDemo(Boolean(c.demo) || !c.embedUrl);
       setCandidateId(p.profile?._id || "");
       setEmail(p.user?.email || p.profile?.email || "");
       setAvailability(p.recruiterAvailability || null);
@@ -229,7 +231,25 @@ export default function CandidateSchedulePage() {
 
       <div className="grid gap-4 xl:grid-cols-5">
         <Card className="xl:col-span-3 overflow-hidden p-0">
-          {embedUrl ? (
+          {calendlyDemo ? (
+            <div className="flex h-[700px] flex-col items-center justify-center gap-3 bg-[var(--surface-2)] p-8 text-center">
+              <h3 className="text-lg font-semibold">Calendly demo mode</h3>
+              <p className="max-w-md text-sm text-[var(--muted)]">
+                No live Calendly event URL is configured, so the embed is hidden to avoid a broken
+                iframe. Use the panel on the right to confirm a time (or simulate a webhook). In
+                production, set a recruiter Calendly URL under Profile / Integrations.
+              </p>
+              {schedulingUrl ? (
+                <a
+                  href={schedulingUrl}
+                  target="_blank"
+                  className="text-sm text-[var(--primary)] underline"
+                >
+                  Open scheduling URL
+                </a>
+              ) : null}
+            </div>
+          ) : embedUrl ? (
             <iframe title="Calendly" src={embedUrl} className="h-[700px] w-full border-0" />
           ) : (
             <div className="p-6 text-sm text-[var(--muted)]">Loading Calendly...</div>

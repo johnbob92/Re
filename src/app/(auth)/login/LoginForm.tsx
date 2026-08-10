@@ -102,7 +102,10 @@ export function LoginForm() {
             </p>
           </div>
 
-          <Field label="Quick demo account">
+          <Field
+            label="Fill demo credentials"
+            hint="Roles are assigned by Super Admin — this only prefills login email/password."
+          >
             <Select
               value={demo}
               onChange={(e) => {

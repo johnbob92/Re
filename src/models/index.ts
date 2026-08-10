@@ -10,3 +10,5 @@ export * from "./Connection";
 export * from "./MessageLog";
 export * from "./AuditLog";
 export * from "./AppNotification";
+export * from "./ChatThread";
+export * from "./ChatMessage";

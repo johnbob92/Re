@@ -26,11 +26,13 @@ describe("role permission matrix", () => {
   it("gives recruiter assessment write but not import", () => {
     expect(can("recruiter", "assessments.write")).toBe(true);
     expect(can("recruiter", "messages.view")).toBe(true);
+    expect(can("recruiter", "chat.use")).toBe(true);
     expect(can("recruiter", "candidates.import")).toBe(false);
   });
 
   it("gives candidate offer respond permission", () => {
     expect(can("candidate", "offers.respond")).toBe(true);
+    expect(can("candidate", "chat.use")).toBe(true);
     expect(can("candidate", "offers.manage")).toBe(false);
     expect(can("candidate", "assessments.write")).toBe(false);
   });

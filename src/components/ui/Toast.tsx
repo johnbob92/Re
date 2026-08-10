@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { BellRing, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -10,6 +11,22 @@ export interface ToastItem {
   body?: string;
   actionLabel?: string;
   href?: string;
+}
+
+function AutoDismiss({
+  id,
+  onDismiss,
+  ms = 12000,
+}: {
+  id: string;
+  onDismiss: (id: string) => void;
+  ms?: number;
+}) {
+  useEffect(() => {
+    const t = window.setTimeout(() => onDismiss(id), ms);
+    return () => window.clearTimeout(t);
+  }, [id, ms, onDismiss]);
+  return null;
 }
 
 export function ToastStack({
@@ -30,6 +47,7 @@ export function ToastStack({
             exit={{ opacity: 0, y: 10 }}
             className="pointer-events-auto rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 shadow-2xl"
           >
+            <AutoDismiss id={item.id} onDismiss={onDismiss} />
             <div className="flex items-start gap-3">
               <div className="mt-0.5 rounded-xl bg-[var(--primary)]/10 p-2 text-[var(--primary)]">
                 <BellRing className="h-4 w-4" />
