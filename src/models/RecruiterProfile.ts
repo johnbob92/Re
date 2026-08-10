@@ -17,6 +17,10 @@ export interface IRecruiterProfile {
   activeStartDate?: Date;
   calendlyUrl?: string;
   googleMeetDefaultLink?: string;
+  timezone?: string;
+  availableWeekdays?: number[];
+  availableFrom?: string;
+  availableTo?: string;
   /** Denormalized counters for fast performance views */
   hiredTotal: number;
   hiredWeekly: number;
@@ -47,6 +51,10 @@ const RecruiterProfileSchema = new Schema<IRecruiterProfile>(
     activeStartDate: Date,
     calendlyUrl: String,
     googleMeetDefaultLink: String,
+    timezone: { type: String, default: "America/New_York" },
+    availableWeekdays: { type: [Number], default: [1, 2, 3, 4, 5] },
+    availableFrom: { type: String, default: "09:00" },
+    availableTo: { type: String, default: "17:00" },
     hiredTotal: { type: Number, default: 0 },
     hiredWeekly: { type: Number, default: 0 },
     hiredMonthly: { type: Number, default: 0 },

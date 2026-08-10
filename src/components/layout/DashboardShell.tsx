@@ -16,6 +16,7 @@ import {
   Sparkles,
   History,
   Mail,
+  ChartColumn,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { ThemeControls } from "@/components/theme/ThemeControls";
@@ -36,6 +37,7 @@ const NAV: Record<UserRole, NavItem[]> = {
   admin: [
     { href: "/admin/candidates", label: "Candidates", icon: Users },
     { href: "/admin/recruiters", label: "Recruiters", icon: BriefcaseBusiness },
+    { href: "/admin/analytics", label: "Analytics", icon: ChartColumn },
     { href: "/admin/offers", label: "Offers", icon: ClipboardCheck },
     { href: "/admin/messages", label: "Messages", icon: Mail },
     { href: "/admin/activity", label: "Activity", icon: History },
@@ -53,6 +55,7 @@ const NAV: Record<UserRole, NavItem[]> = {
   ],
   candidate: [
     { href: "/candidate/state", label: "My Status", icon: Sparkles },
+    { href: "/candidate/offers", label: "My Offers", icon: ClipboardCheck },
     { href: "/candidate/schedule", label: "Schedule", icon: CalendarDays },
     { href: "/candidate/calendar", label: "Calendar", icon: CalendarDays },
     { href: "/candidate/profile", label: "Profile", icon: UserRound },

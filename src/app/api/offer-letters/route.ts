@@ -140,7 +140,7 @@ export async function POST(req: NextRequest) {
         type: "offer.sent",
         title: "Offer letter received",
         body: `You received an offer from ${admin?.companyName || "the hiring team"}.`,
-        href: "/candidate/state",
+        href: "/candidate/offers",
       });
     }
 

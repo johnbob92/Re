@@ -29,9 +29,23 @@ export default function RecruiterProfilePage() {
     phone: "",
     calendlyUrl: "",
     customAvatarUrl: "",
+    timezone: "America/New_York",
+    availableWeekdays: [1, 2, 3, 4, 5] as number[],
+    availableFrom: "09:00",
+    availableTo: "17:00",
   });
   const [templates, setTemplates] = useState<Template[]>([]);
   const [selectedType, setSelectedType] = useState("reminder");
+
+  const weekdayLabels = [
+    { value: 0, label: "Sun" },
+    { value: 1, label: "Mon" },
+    { value: 2, label: "Tue" },
+    { value: 3, label: "Wed" },
+    { value: 4, label: "Thu" },
+    { value: 5, label: "Fri" },
+    { value: 6, label: "Sat" },
+  ];
 
   useEffect(() => {
     Promise.all([fetch("/api/profile"), fetch("/api/notifications")]).then(
@@ -45,6 +59,10 @@ export default function RecruiterProfilePage() {
           phone: p.profile?.phone || p.user?.phone || "",
           calendlyUrl: p.profile?.calendlyUrl || "",
           customAvatarUrl: "",
+          timezone: p.profile?.timezone || "America/New_York",
+          availableWeekdays: p.profile?.availableWeekdays || [1, 2, 3, 4, 5],
+          availableFrom: p.profile?.availableFrom || "09:00",
+          availableTo: p.profile?.availableTo || "17:00",
         });
         setTemplates(n.items || []);
       }
@@ -135,6 +153,62 @@ export default function RecruiterProfilePage() {
                   onChange={(e) => setForm({ ...form, calendlyUrl: e.target.value })}
                   placeholder="https://calendly.com/your-handle"
                 />
+              </Field>
+              <Field label="Timezone">
+                <Select
+                  value={form.timezone}
+                  onChange={(e) => setForm({ ...form, timezone: e.target.value })}
+                >
+                  <option value="America/New_York">US Eastern</option>
+                  <option value="America/Chicago">US Central</option>
+                  <option value="America/Denver">US Mountain</option>
+                  <option value="America/Los_Angeles">US Pacific</option>
+                  <option value="UTC">UTC</option>
+                  <option value="Europe/London">London</option>
+                  <option value="Asia/Kolkata">India</option>
+                </Select>
+              </Field>
+              <Field label="Available from">
+                <Input
+                  type="time"
+                  value={form.availableFrom}
+                  onChange={(e) => setForm({ ...form, availableFrom: e.target.value })}
+                />
+              </Field>
+              <Field label="Available to">
+                <Input
+                  type="time"
+                  value={form.availableTo}
+                  onChange={(e) => setForm({ ...form, availableTo: e.target.value })}
+                />
+              </Field>
+              <Field label="Available weekdays" className="md:col-span-2">
+                <div className="flex flex-wrap gap-2">
+                  {weekdayLabels.map((day) => {
+                    const checked = form.availableWeekdays.includes(day.value);
+                    return (
+                      <button
+                        key={day.value}
+                        type="button"
+                        onClick={() =>
+                          setForm({
+                            ...form,
+                            availableWeekdays: checked
+                              ? form.availableWeekdays.filter((d) => d !== day.value)
+                              : [...form.availableWeekdays, day.value].sort(),
+                          })
+                        }
+                        className={`rounded-lg border px-3 py-1.5 text-xs font-medium ${
+                          checked
+                            ? "border-[var(--primary)] bg-[var(--primary)]/10 text-[var(--primary)]"
+                            : "border-[var(--border)]"
+                        }`}
+                      >
+                        {day.label}
+                      </button>
+                    );
+                  })}
+                </div>
               </Field>
               <Field label="Upload custom avatar (AWS S3)" className="md:col-span-2">
                 <FileUpload

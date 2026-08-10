@@ -15,15 +15,46 @@ export async function GET() {
     if (!account) return jsonError("User not found", 404);
 
     let profile = null;
+    let recruiterAvailability = null;
     if (user.role === "admin") {
       profile = await AdminProfile.findOne({ userId: user.id }).lean();
     } else if (user.role === "recruiter") {
       profile = await RecruiterProfile.findOne({ userId: user.id }).lean();
     } else if (user.role === "candidate") {
       profile = await CandidateProfile.findOne({ userId: user.id }).lean();
+      if (profile) {
+        const preferTech =
+          profile.status === "hr_pass" ||
+          profile.status === "tech_pass" ||
+          profile.status === "scheduled";
+        const recruiterUserId =
+          preferTech && profile.techRecruiterId
+            ? profile.techRecruiterId
+            : profile.recruiterId;
+        if (recruiterUserId) {
+          const rp = await RecruiterProfile.findOne({ userId: recruiterUserId })
+            .select("name timezone availableWeekdays availableFrom availableTo recruiterType")
+            .lean();
+          if (rp) {
+            recruiterAvailability = toObject({
+              ...rp,
+              timezone: rp.timezone || "America/New_York",
+              availableWeekdays: rp.availableWeekdays?.length
+                ? rp.availableWeekdays
+                : [1, 2, 3, 4, 5],
+              availableFrom: rp.availableFrom || "09:00",
+              availableTo: rp.availableTo || "17:00",
+            });
+          }
+        }
+      }
     }
 
-    return jsonOk({ user: toObject(account), profile: toObject(profile) });
+    return jsonOk({
+      user: toObject(account),
+      profile: toObject(profile),
+      recruiterAvailability,
+    });
   });
 }
 
@@ -42,6 +73,10 @@ const schema = z.object({
   // recruiter
   location: z.string().optional(),
   googleMeetDefaultLink: z.string().optional(),
+  timezone: z.string().optional(),
+  availableWeekdays: z.array(z.number().min(0).max(6)).optional(),
+  availableFrom: z.string().optional(),
+  availableTo: z.string().optional(),
   // candidate
   whatsapp: z.string().optional(),
   birthday: z.string().optional(),
@@ -100,6 +135,10 @@ export async function PUT(req: NextRequest) {
             location: body.location,
             calendlyUrl: body.calendlyUrl,
             googleMeetDefaultLink: body.googleMeetDefaultLink,
+            timezone: body.timezone,
+            availableWeekdays: body.availableWeekdays,
+            availableFrom: body.availableFrom,
+            availableTo: body.availableTo,
           },
         },
         { new: true }

@@ -119,6 +119,16 @@ In-app notification inbox (bell icon) for pipeline/offer/interview events.
 
 Admin bulk candidate CSV import: Candidates page → Import CSV (`/api/candidates/import`).
 
+Candidate offer decisions: `/candidate/offers` (accept/decline sent offers).
+
+Offer download / print-to-PDF: `/api/candidate/offers/:id/download` (candidate + admin).
+
+Recruiter availability: timezone + weekday/time window on Recruiter Profile. Scheduling (manual + Calendly webhook) rejects times outside the window or overlapping existing interviews.
+
+Admin team analytics: `/admin/analytics` — pass rates by recruiter, stage breakdown, hire counters, CSV export.
+
+Permission matrix utilities live in `src/lib/permissions.ts` (covered by `npm test`).
+
 ## Scripts
 
 ```bash
@@ -126,5 +136,6 @@ npm run dev
 npm run build
 npm run start
 npm run lint
+npm run test
 npm run seed
 ```

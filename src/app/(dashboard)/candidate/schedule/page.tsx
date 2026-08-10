@@ -14,6 +14,16 @@ export default function CandidateSchedulePage() {
   const [scheduledAt, setScheduledAt] = useState("");
   const [stage, setStage] = useState("hr");
   const [message, setMessage] = useState("");
+  const [availability, setAvailability] = useState<{
+    name?: string;
+    timezone?: string;
+    availableWeekdays?: number[];
+    availableFrom?: string;
+    availableTo?: string;
+    recruiterType?: string;
+  } | null>(null);
+
+  const weekdayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
   useEffect(() => {
     Promise.all([fetch("/api/integrations/calendly"), fetch("/api/profile")]).then(
@@ -24,6 +34,7 @@ export default function CandidateSchedulePage() {
         setSchedulingUrl(c.schedulingUrl);
         setCandidateId(p.profile?._id || "");
         setEmail(p.user?.email || p.profile?.email || "");
+        setAvailability(p.recruiterAvailability || null);
         if (p.profile?.status === "hr_pass") setStage("tech");
         if (p.profile?.status === "tech_pass") setStage("final");
       }
@@ -106,6 +117,25 @@ export default function CandidateSchedulePage() {
               Open Calendly in new tab
             </a>
           </div>
+          {availability ? (
+            <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-3 text-sm">
+              <p className="font-medium">
+                {availability.name || "Recruiter"} availability
+                {availability.recruiterType ? ` (${availability.recruiterType})` : ""}
+              </p>
+              <p className="mt-1 text-[var(--muted)]">
+                {(availability.availableWeekdays || [1, 2, 3, 4, 5])
+                  .map((d) => weekdayLabels[d] || d)
+                  .join(", ")}{" "}
+                · {availability.availableFrom || "09:00"}–
+                {availability.availableTo || "17:00"}{" "}
+                ({availability.timezone || "America/New_York"})
+              </p>
+              <p className="mt-1 text-xs text-[var(--muted)]">
+                Booking outside this window or overlapping an existing interview is blocked.
+              </p>
+            </div>
+          ) : null}
           <form onSubmit={book} className="space-y-3">
             <Field label="Stage">
               <Select value={stage} onChange={(e) => setStage(e.target.value)}>

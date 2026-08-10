@@ -226,13 +226,20 @@ export default function AdminOffersPage() {
               </Td>
               <Td>{formatDateTime(item.sentAt)}</Td>
               <Td>
-                {item.fileUrl ? (
-                  <a href={item.fileUrl} target="_blank" className="text-[var(--primary)] underline">
-                    PDF
+                <div className="flex flex-col gap-1">
+                  <a
+                    href={`/api/candidate/offers/${item._id}/download`}
+                    target="_blank"
+                    className="text-[var(--primary)] underline"
+                  >
+                    Print PDF
                   </a>
-                ) : (
-                  "—"
-                )}
+                  {item.fileUrl ? (
+                    <a href={item.fileUrl} target="_blank" className="text-[var(--primary)] underline">
+                      Attachment
+                    </a>
+                  ) : null}
+                </div>
               </Td>
               <Td>
                 <div className="flex flex-wrap gap-1">

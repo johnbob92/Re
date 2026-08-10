@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { Card } from "@/components/ui/Card";
@@ -88,28 +89,46 @@ export default function CandidateStatePage() {
           </div>
         </Card>
 
-        <Card>
-          <h3 className="mb-2 font-semibold">Next interview</h3>
-          {interview ? (
-            <div className="space-y-2 text-sm">
-              <p className="uppercase text-[var(--muted)]">{interview.stage}</p>
-              <p>{formatDateTime(interview.scheduledAt)}</p>
-              {interview.canJoin ? (
-                <a href={interview.googleMeetLink || "#"} target="_blank">
-                  <Button className="w-full" variant="success">
-                    Join the Interview
+        <div className="space-y-4">
+          <Card>
+            <h3 className="mb-2 font-semibold">Next interview</h3>
+            {interview ? (
+              <div className="space-y-2 text-sm">
+                <p className="uppercase text-[var(--muted)]">{interview.stage}</p>
+                <p>{formatDateTime(interview.scheduledAt)}</p>
+                {interview.canJoin ? (
+                  <a href={interview.googleMeetLink || "#"} target="_blank">
+                    <Button className="w-full" variant="success">
+                      Join the Interview
+                    </Button>
+                  </a>
+                ) : (
+                  <Button className="w-full" variant="secondary" disabled>
+                    Join button appears 5 minutes before start
                   </Button>
-                </a>
-              ) : (
-                <Button className="w-full" variant="secondary" disabled>
-                  Join button appears 5 minutes before start
+                )}
+              </div>
+            ) : (
+              <p className="text-sm text-[var(--muted)]">No upcoming interview yet.</p>
+            )}
+          </Card>
+
+          {(status === "offer_sent" || status === "hired" || status === "final_pass") && (
+            <Card>
+              <h3 className="mb-2 font-semibold">Offer letter</h3>
+              <p className="mb-3 text-sm text-[var(--muted)]">
+                {status === "hired"
+                  ? "You already accepted an offer. You can still review details."
+                  : "Review and accept/decline your offer letter."}
+              </p>
+              <Link href="/candidate/offers">
+                <Button className="w-full" variant="warning">
+                  Open my offers
                 </Button>
-              )}
-            </div>
-          ) : (
-            <p className="text-sm text-[var(--muted)]">No upcoming interview yet.</p>
+              </Link>
+            </Card>
           )}
-        </Card>
+        </div>
       </div>
     </DashboardShell>
   );

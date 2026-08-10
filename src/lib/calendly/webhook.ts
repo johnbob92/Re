@@ -3,6 +3,7 @@ import { addMinutes } from "date-fns";
 import { CandidateProfile, Interview, RecruiterProfile, AdminProfile } from "@/models";
 import { createGoogleCalendarEvent } from "@/lib/google/calendar";
 import { postSlackMessage } from "@/lib/slack/client";
+import { assertRecruiterSlotAvailable } from "@/lib/scheduling";
 import type { InterviewStage } from "@/types";
 
 export function verifyCalendlySignature(rawBody: string, signatureHeader?: string | null) {
@@ -95,6 +96,9 @@ export async function handleCalendlyInviteeCreated(payload: {
   }
 
   const start = new Date(payload.startTime);
+  if (Number.isNaN(start.getTime())) {
+    return { ok: false, error: "Invalid start time" };
+  }
   const end = addMinutes(start, 45);
 
   const existing = await Interview.findOne({
@@ -104,6 +108,13 @@ export async function handleCalendlyInviteeCreated(payload: {
     calendlyEventUri: payload.eventUri,
   });
   if (existing) return { ok: true, interviewId: String(existing._id), deduped: true };
+
+  const slot = await assertRecruiterSlotAvailable({
+    recruiterUserId: String(recruiterId),
+    start,
+    durationMinutes: 45,
+  });
+  if (!slot.ok) return { ok: false, error: slot.reason };
 
   const calendar = await createGoogleCalendarEvent({
     summary: `${stage.toUpperCase()} Interview — ${candidate.name}`,

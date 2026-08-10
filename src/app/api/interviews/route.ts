@@ -13,6 +13,7 @@ import { DEFAULT_NOTIFICATION_TEMPLATES, renderTemplate } from "@/data/sample-me
 import { canJoinInterview, minutesUntil } from "@/lib/utils/dates";
 import { postSlackMessage } from "@/lib/slack/client";
 import { notifyMany } from "@/lib/notify";
+import { assertRecruiterSlotAvailable } from "@/lib/scheduling";
 import { addMinutes } from "date-fns";
 
 export async function GET(req: NextRequest) {
@@ -74,7 +75,18 @@ export async function POST(req: NextRequest) {
     if (!recruiterId) return jsonError("No recruiter assigned", 400);
 
     const start = new Date(body.scheduledAt);
+    if (Number.isNaN(start.getTime())) {
+      return jsonError("Invalid scheduledAt datetime", 400);
+    }
     const end = addMinutes(start, 45);
+
+    const slot = await assertRecruiterSlotAvailable({
+      recruiterUserId: recruiterId,
+      start,
+      durationMinutes: 45,
+    });
+    if (!slot.ok) return jsonError(slot.reason, 409);
+
     const calendar = await createGoogleCalendarEvent({
       summary: `${body.stage.toUpperCase()} Interview — ${candidate.name}`,
       description: body.notes || "HireFlow scheduled interview",
