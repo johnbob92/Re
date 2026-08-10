@@ -53,7 +53,7 @@ export default function SuperAdminManagingPage() {
   return (
     <DashboardShell
       title="User Management"
-      subtitle="Reset passwords, change roles, and delete accounts across the platform"
+      subtitle="Assign roles (Admin / Recruiter / Candidate), reset passwords, and delete accounts. Public signup cannot self-select elevated roles."
     >
       {message ? <p className="mb-3 text-sm text-[var(--primary)]">{message}</p> : null}
       <Table headers={["Username", "Email", "Role", "Status", "Actions"]}>
@@ -108,7 +108,10 @@ export default function SuperAdminManagingPage() {
         }
       >
         <div className="space-y-3">
-          <Field label="Role">
+          <Field
+            label="Assign role"
+            hint="Only Super Admin can elevate users. Candidates register publicly; recruiters/admins are assigned here or invited by an Admin."
+          >
             <Select value={role} onChange={(e) => setRole(e.target.value as UserRole)}>
               <option value="superadmin">Super Admin</option>
               <option value="admin">Admin</option>

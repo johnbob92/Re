@@ -117,7 +117,7 @@ export async function PUT(req: NextRequest) {
             offerLetterTemplateHtml: body.offerLetterTemplateHtml,
           },
         },
-        { new: true }
+        { returnDocument: "after" }
       );
       return jsonOk({
         user: toObject(await User.findById(user.id).select("-passwordHash")),
@@ -141,7 +141,7 @@ export async function PUT(req: NextRequest) {
             availableTo: body.availableTo,
           },
         },
-        { new: true }
+        { returnDocument: "after" }
       );
       return jsonOk({
         user: toObject(await User.findById(user.id).select("-passwordHash")),
@@ -166,7 +166,7 @@ export async function PUT(req: NextRequest) {
             experienceYears: body.experienceYears,
           },
         },
-        { new: true }
+        { returnDocument: "after" }
       );
       return jsonOk({
         user: toObject(await User.findById(user.id).select("-passwordHash")),

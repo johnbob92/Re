@@ -159,7 +159,7 @@ export async function PATCH(req: NextRequest) {
     const offer = await OfferLetter.findOneAndUpdate(
       { _id: body.id, adminId: user.id },
       { status: body.status },
-      { new: true }
+      { returnDocument: "after" }
     );
     if (!offer) return jsonError("Offer not found", 404);
 

@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
           connectedAt: body.status === "connected" ? new Date() : undefined,
         },
       },
-      { upsert: true, new: true }
+      { upsert: true, returnDocument: "after" }
     );
 
     if (body.status === "connected") {

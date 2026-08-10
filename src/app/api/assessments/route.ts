@@ -39,7 +39,7 @@ export async function GET() {
                 decision: "pending",
               },
             },
-            { upsert: true, new: true }
+            { upsert: true, returnDocument: "after" }
           )
         )
       );
@@ -115,7 +115,7 @@ export async function PUT(req: NextRequest) {
           decidedAt: body.decision && body.decision !== "pending" ? new Date() : undefined,
         },
       },
-      { upsert: true, new: true }
+      { upsert: true, returnDocument: "after" }
     );
 
     if (body.recordingUrl) {

@@ -45,7 +45,7 @@ export async function PUT(req: NextRequest) {
     const item = await NotificationTemplate.findOneAndUpdate(
       { userId: user.id, type: body.type },
       { $set: body },
-      { upsert: true, new: true }
+      { upsert: true, returnDocument: "after" }
     );
     return jsonOk({ item: toObject(item) });
   });
