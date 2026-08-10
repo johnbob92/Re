@@ -4,8 +4,9 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { Field, Input, Select, Textarea } from "@/components/ui/Input";
+import { Field, Input, Select } from "@/components/ui/Input";
 import { FileUpload } from "@/components/ui/FileUpload";
+import { RichTextEditor } from "@/components/ui/RichTextEditor";
 import { Table, Td } from "@/components/ui/Table";
 import { LoadingBlock, EmptyState } from "@/components/ui/Loading";
 import { Badge } from "@/components/ui/Badge";
@@ -135,12 +136,12 @@ export default function AdminOffersPage() {
       <div className="mb-6 grid gap-4 xl:grid-cols-2">
         <Card>
           <h3 className="mb-3 font-semibold">Company offer template</h3>
-          <Field label="Template HTML">
-            <Textarea
-              value={templateHtml}
-              onChange={(e) => setTemplateHtml(e.target.value)}
-            />
-          </Field>
+          <RichTextEditor
+            label="Template HTML"
+            value={templateHtml}
+            onChange={setTemplateHtml}
+            previewVars={{ candidateName: "Alex Candidate", companyName }}
+          />
           <p className="mt-2 text-xs text-[var(--muted)]">
             Variables: {"{{candidateName}}"}, {"{{companyName}}"}
           </p>
@@ -173,13 +174,16 @@ export default function AdminOffersPage() {
                 required
               />
             </Field>
-            <Field label="Offer content (HTML)">
-              <Textarea
-                value={form.contentHtml}
-                onChange={(e) => setForm({ ...form, contentHtml: e.target.value })}
-                required
-              />
-            </Field>
+            <RichTextEditor
+              label="Offer content (HTML)"
+              value={form.contentHtml}
+              onChange={(contentHtml) => setForm({ ...form, contentHtml })}
+              previewVars={{
+                candidateName:
+                  eligible.find((c) => c._id === form.candidateId)?.name || "Candidate",
+                companyName,
+              }}
+            />
             <Field label="Offer PDF (S3)">
               <FileUpload
                 folder="offers"

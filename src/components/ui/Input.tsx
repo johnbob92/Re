@@ -1,7 +1,12 @@
 "use client";
 
 import { cn } from "@/lib/utils/cn";
-import { InputHTMLAttributes, TextareaHTMLAttributes, SelectHTMLAttributes } from "react";
+import {
+  forwardRef,
+  InputHTMLAttributes,
+  TextareaHTMLAttributes,
+  SelectHTMLAttributes,
+} from "react";
 
 export function Field({
   label,
@@ -26,25 +31,31 @@ export function Field({
 const controlClass =
   "w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5 text-sm text-[var(--foreground)] outline-none transition focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/20 placeholder:text-[var(--muted)]";
 
-export function Input({ className, ...props }: InputHTMLAttributes<HTMLInputElement>) {
-  return <input className={cn(controlClass, className)} {...props} />;
-}
+export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(
+  function Input({ className, ...props }, ref) {
+    return <input ref={ref} className={cn(controlClass, className)} {...props} />;
+  }
+);
 
-export function Textarea({
-  className,
-  ...props
-}: TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  return <textarea className={cn(controlClass, "min-h-28 resize-y", className)} {...props} />;
-}
-
-export function Select({
-  className,
-  children,
-  ...props
-}: SelectHTMLAttributes<HTMLSelectElement>) {
+export const Textarea = forwardRef<
+  HTMLTextAreaElement,
+  TextareaHTMLAttributes<HTMLTextAreaElement>
+>(function Textarea({ className, ...props }, ref) {
   return (
-    <select className={cn(controlClass, className)} {...props}>
-      {children}
-    </select>
+    <textarea
+      ref={ref}
+      className={cn(controlClass, "min-h-28 resize-y", className)}
+      {...props}
+    />
   );
-}
+});
+
+export const Select = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSelectElement>>(
+  function Select({ className, children, ...props }, ref) {
+    return (
+      <select ref={ref} className={cn(controlClass, className)} {...props}>
+        {children}
+      </select>
+    );
+  }
+);

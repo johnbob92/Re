@@ -105,6 +105,10 @@ Auto reminder job endpoint: `POST /api/jobs/reminders` (T-15 emails, T-5 join to
 
 Interview join alerts poll every 30s in the dashboard shell for admin/recruiter/candidate roles.
 
+CSV export buttons are available on Super Admin dashboard, Admin candidates/recruiters, and Recruiter connected/scheduled/assessment tables.
+
+Offer letters include a formatting toolbar + live HTML preview.
+
 ## Scripts
 
 ```bash

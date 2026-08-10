@@ -1,13 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Download } from "lucide-react";
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { Table, Td } from "@/components/ui/Table";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { FileUpload } from "@/components/ui/FileUpload";
+import { SearchBar } from "@/components/ui/SearchBar";
+import { EmptyState, LoadingBlock } from "@/components/ui/Loading";
 import { useAuth } from "@/contexts/AuthContext";
 import { ageFromBirthday } from "@/lib/utils/dates";
+import { downloadCsv } from "@/lib/utils/csv";
 
 interface AssessmentRow {
   _id: string;
@@ -46,17 +50,36 @@ export default function RecruiterAssessmentPage() {
   const isTech = user?.recruiterType === "tech";
   const [items, setItems] = useState<AssessmentRow[]>([]);
   const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState("");
+  const [decisionFilter, setDecisionFilter] = useState("");
 
   async function load() {
-    // Ensure assessments exist for connected/scheduled candidates by reading assessments endpoint
     const res = await fetch("/api/assessments");
     const data = await res.json();
     setItems(data.items || []);
+    setLoading(false);
   }
 
   useEffect(() => {
     load();
   }, []);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return items.filter((item) => {
+      if (decisionFilter && (item.decision || "pending") !== decisionFilter) return false;
+      if (!q) return true;
+      return [
+        item.candidateId?.name,
+        item.candidateId?.email,
+        item.candidateId?.location,
+        item.candidateId?.majorStack,
+      ]
+        .filter(Boolean)
+        .some((v) => String(v).toLowerCase().includes(q));
+    });
+  }, [items, query, decisionFilter]);
 
   function updateLocal(id: string, patch: Partial<AssessmentRow>) {
     setItems((prev) => prev.map((item) => (item._id === id ? { ...item, ...patch } : item)));
@@ -128,6 +151,32 @@ export default function RecruiterAssessmentPage() {
         "Decision",
       ];
 
+  function exportCsv() {
+    downloadCsv(
+      `hireflow-assessments-${new Date().toISOString().slice(0, 10)}.csv`,
+      [
+        "Name",
+        "Email",
+        "Location",
+        "Experience",
+        "Stack",
+        "Decision",
+        "Communication",
+        "Comment",
+      ],
+      filtered.map((item) => [
+        item.candidateId?.name || "",
+        item.candidateId?.email || "",
+        item.candidateId?.location || "",
+        item.candidateId?.experienceYears ?? "",
+        item.candidateId?.majorStack || "",
+        item.decision || "pending",
+        item.communication ?? "",
+        item.comment || "",
+      ])
+    );
+  }
+
   return (
     <DashboardShell
       title="Interview Assessment"
@@ -136,10 +185,34 @@ export default function RecruiterAssessmentPage() {
           ? "Technical assessment with cloud / backend / frontend scoring"
           : "HR assessment with communication and logistics scoring"
       }
+      actions={
+        <Button size="sm" variant="secondary" onClick={exportCsv} disabled={!filtered.length}>
+          <Download className="h-4 w-4" />
+          Export CSV
+        </Button>
+      }
     >
       {message ? <p className="mb-3 text-sm text-[var(--primary)]">{message}</p> : null}
+      <SearchBar
+        query={query}
+        onQueryChange={setQuery}
+        status={decisionFilter}
+        onStatusChange={setDecisionFilter}
+        placeholder="Search assessments..."
+        statusOptions={[
+          { value: "", label: "All decisions" },
+          { value: "pending", label: "Pending" },
+          { value: "pass", label: "Pass" },
+          { value: "fail", label: "Fail" },
+        ]}
+      />
+      {loading ? <LoadingBlock label="Loading assessments..." /> : null}
+      {!loading && filtered.length === 0 ? (
+        <EmptyState title="No assessments found" />
+      ) : null}
+      {!loading && filtered.length > 0 ? (
       <Table headers={headers}>
-        {items.map((item) => (
+        {filtered.map((item) => (
           <tr key={item._id}>
             <Td className="font-medium">{item.candidateId?.name}</Td>
             {!isTech ? <Td>{item.candidateId?.experienceYears ?? 0}y</Td> : null}
@@ -316,6 +389,7 @@ export default function RecruiterAssessmentPage() {
           </tr>
         ))}
       </Table>
+      ) : null}
     </DashboardShell>
   );
 }

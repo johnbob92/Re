@@ -11,7 +11,9 @@ import { FileUpload } from "@/components/ui/FileUpload";
 import { SearchBar } from "@/components/ui/SearchBar";
 import { EmptyState, LoadingBlock } from "@/components/ui/Loading";
 import { ageFromBirthday, formatDateTime } from "@/lib/utils/dates";
+import { downloadCsv } from "@/lib/utils/csv";
 import type { CandidateStatus } from "@/types";
+import { Download } from "lucide-react";
 
 interface CandidateRow {
   _id: string;
@@ -136,10 +138,44 @@ export default function AdminCandidatesPage() {
     return c.finalScheduledAt || c.techScheduledAt || c.hrScheduledAt;
   }
 
+  function exportCsv() {
+    downloadCsv(
+      `hireflow-admin-candidates-${new Date().toISOString().slice(0, 10)}.csv`,
+      [
+        "Name",
+        "Email",
+        "Location",
+        "Experience",
+        "WhatsApp",
+        "LinkedIn",
+        "Resume",
+        "Recruiter",
+        "Status",
+      ],
+      filtered.map((c) => [
+        c.name,
+        c.email,
+        c.location || "",
+        c.experienceYears ?? "",
+        c.whatsapp || "",
+        c.linkedinUrl || "",
+        c.resumeUrl || "",
+        c.recruiterId?.username || "",
+        c.status,
+      ])
+    );
+  }
+
   return (
     <DashboardShell
       title="Candidates"
       subtitle="Full pipeline control with pass/fail overrides, Calendly invites, and offer letters"
+      actions={
+        <Button size="sm" variant="secondary" onClick={exportCsv} disabled={!filtered.length}>
+          <Download className="h-4 w-4" />
+          Export CSV
+        </Button>
+      }
     >
       {message ? <p className="mb-3 text-sm text-emerald-600">{message}</p> : null}
 

@@ -10,6 +10,8 @@ import { RecruiterStatusBadge } from "@/components/ui/Badge";
 import { SearchBar } from "@/components/ui/SearchBar";
 import { EmptyState, LoadingBlock } from "@/components/ui/Loading";
 import { formatDate } from "@/lib/utils/dates";
+import { downloadCsv } from "@/lib/utils/csv";
+import { Download } from "lucide-react";
 
 interface RecruiterRow {
   _id: string;
@@ -102,23 +104,59 @@ export default function AdminRecruitersPage() {
     load();
   }
 
+  function exportCsv() {
+    downloadCsv(
+      `hireflow-recruiters-${new Date().toISOString().slice(0, 10)}.csv`,
+      [
+        "Name",
+        "Email",
+        "Location",
+        "Phone",
+        "Role",
+        "Performance",
+        "Salary Type",
+        "Salary Rate",
+        "Paid",
+        "Status",
+      ],
+      filtered.map((r) => [
+        r.name,
+        r.email,
+        r.location || "",
+        r.phone || "",
+        r.recruiterType,
+        r.performance,
+        r.salaryType,
+        r.salaryRate,
+        r.paid,
+        r.status,
+      ])
+    );
+  }
+
   return (
     <DashboardShell
       title="Recruiters"
       subtitle="HR and Technical recruiters with performance, salary, and status controls"
       actions={
-        <Select
-          value={performanceView}
-          onChange={(e) => {
-            setPerformanceView(e.target.value);
-            load(e.target.value);
-          }}
-          className="w-40"
-        >
-          <option value="weekly">Weekly hired</option>
-          <option value="monthly">Monthly hired</option>
-          <option value="total">Total hired</option>
-        </Select>
+        <>
+          <Button size="sm" variant="secondary" onClick={exportCsv} disabled={!filtered.length}>
+            <Download className="h-4 w-4" />
+            Export CSV
+          </Button>
+          <Select
+            value={performanceView}
+            onChange={(e) => {
+              setPerformanceView(e.target.value);
+              load(e.target.value);
+            }}
+            className="w-40"
+          >
+            <option value="weekly">Weekly hired</option>
+            <option value="monthly">Monthly hired</option>
+            <option value="total">Total hired</option>
+          </Select>
+        </>
       }
     >
       <Card className="mb-6">
