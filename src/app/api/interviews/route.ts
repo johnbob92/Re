@@ -12,6 +12,7 @@ import { sendEmail } from "@/lib/email/send";
 import { DEFAULT_NOTIFICATION_TEMPLATES, renderTemplate } from "@/data/sample-messages";
 import { canJoinInterview, minutesUntil } from "@/lib/utils/dates";
 import { postSlackMessage } from "@/lib/slack/client";
+import { notifyMany } from "@/lib/notify";
 import { addMinutes } from "date-fns";
 
 export async function GET(req: NextRequest) {
@@ -110,6 +111,19 @@ export async function POST(req: NextRequest) {
     await postSlackMessage(
       `📅 ${body.stage.toUpperCase()} interview scheduled with ${candidate.name} at ${start.toLocaleString()}`
     );
+
+    await notifyMany([candidate.userId, recruiterId, candidate.adminId], {
+      type: "interview.scheduled",
+      title: `${body.stage.toUpperCase()} interview scheduled`,
+      body: `${candidate.name} — ${start.toLocaleString()}`,
+      href:
+        user.role === "candidate"
+          ? "/candidate/schedule"
+          : user.role === "admin"
+            ? "/admin/calendar"
+            : "/recruiter/scheduled",
+      meta: { interviewId: String(interview._id) },
+    });
 
     return jsonOk({ item: toObject(interview), calendar }, { status: 201 });
   });

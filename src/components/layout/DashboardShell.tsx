@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { ThemeControls } from "@/components/theme/ThemeControls";
+import { NotificationBell } from "@/components/layout/NotificationBell";
 import { ToastStack } from "@/components/ui/Toast";
 import { useInterviewAlerts } from "@/hooks/useInterviewAlerts";
 import { cn } from "@/lib/utils/cn";
@@ -142,6 +143,7 @@ export function DashboardShell({
             </div>
             <div className="flex flex-wrap items-center gap-2">
               {actions}
+              <NotificationBell />
               <ThemeControls />
               {user ? (
                 <div className="flex items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5">

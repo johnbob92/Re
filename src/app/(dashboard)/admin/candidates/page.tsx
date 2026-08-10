@@ -13,7 +13,7 @@ import { EmptyState, LoadingBlock } from "@/components/ui/Loading";
 import { ageFromBirthday, formatDateTime } from "@/lib/utils/dates";
 import { downloadCsv } from "@/lib/utils/csv";
 import type { CandidateStatus } from "@/types";
-import { Download } from "lucide-react";
+import { Download, Upload } from "lucide-react";
 
 interface CandidateRow {
   _id: string;
@@ -59,6 +59,9 @@ export default function AdminCandidatesPage() {
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [importOpen, setImportOpen] = useState(false);
+  const [importCsv, setImportCsv] = useState("");
+  const [importBusy, setImportBusy] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -166,15 +169,48 @@ export default function AdminCandidatesPage() {
     );
   }
 
+  async function openImport() {
+    const res = await fetch("/api/candidates/import");
+    const data = await res.json();
+    setImportCsv(data.template || "");
+    setImportOpen(true);
+  }
+
+  async function runImport() {
+    setImportBusy(true);
+    const res = await fetch("/api/candidates/import", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ csv: importCsv }),
+    });
+    const data = await res.json();
+    setImportBusy(false);
+    if (!res.ok) {
+      setMessage(data.error || "Import failed");
+      return;
+    }
+    setMessage(
+      `Imported ${data.createdCount} candidates, skipped ${data.skippedCount}. Default password: ${data.defaultPassword}`
+    );
+    setImportOpen(false);
+    load();
+  }
+
   return (
     <DashboardShell
       title="Candidates"
       subtitle="Full pipeline control with pass/fail overrides, Calendly invites, and offer letters"
       actions={
-        <Button size="sm" variant="secondary" onClick={exportCsv} disabled={!filtered.length}>
-          <Download className="h-4 w-4" />
-          Export CSV
-        </Button>
+        <>
+          <Button size="sm" variant="secondary" onClick={openImport}>
+            <Upload className="h-4 w-4" />
+            Import CSV
+          </Button>
+          <Button size="sm" variant="secondary" onClick={exportCsv} disabled={!filtered.length}>
+            <Download className="h-4 w-4" />
+            Export CSV
+          </Button>
+        </>
       }
     >
       {message ? <p className="mb-3 text-sm text-emerald-600">{message}</p> : null}
@@ -455,6 +491,50 @@ export default function AdminCandidatesPage() {
             <p>Phone: {recruiterInfo.phone || "—"}</p>
           </div>
         ) : null}
+      </Modal>
+
+      <Modal
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        title="Import candidates from CSV"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setImportOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={runImport} disabled={importBusy || !importCsv.trim()}>
+              {importBusy ? "Importing..." : "Import candidates"}
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-3">
+          <p className="text-sm text-[var(--muted)]">
+            Required columns: <code>name</code>, <code>email</code>. Optional: whatsapp, location,
+            linkedin, resume, techstack, majorstack, experience.
+          </p>
+          <Field label="CSV content">
+            <Textarea
+              className="min-h-56 font-mono text-xs"
+              value={importCsv}
+              onChange={(e) => setImportCsv(e.target.value)}
+            />
+          </Field>
+          <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-[var(--primary)]">
+            <Upload className="h-4 w-4" />
+            Upload .csv file
+            <input
+              type="file"
+              accept=".csv,text/csv"
+              className="hidden"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                setImportCsv(await file.text());
+              }}
+            />
+          </label>
+        </div>
       </Modal>
     </DashboardShell>
   );

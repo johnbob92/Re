@@ -11,6 +11,7 @@ import { sendEmail } from "@/lib/email/send";
 import { DEFAULT_NOTIFICATION_TEMPLATES, renderTemplate } from "@/data/sample-messages";
 import { ageFromBirthday } from "@/lib/utils/dates";
 import { writeAudit } from "@/lib/audit";
+import { notifyUser } from "@/lib/notify";
 
 export async function GET() {
   return withAuth(["recruiter", "admin"], async (user) => {
@@ -195,6 +196,25 @@ export async function PUT(req: NextRequest) {
       meta: { stage, decision: body.decision || "pending" },
       adminId: candidate.adminId || user.adminId,
     });
+
+    if (body.decision === "pass" || body.decision === "fail") {
+      await notifyUser({
+        userId: candidate.userId,
+        type: `assessment.${body.decision}`,
+        title: `${stage.toUpperCase()} interview ${body.decision}`,
+        body: `Your ${stage} interview was marked ${body.decision}.`,
+        href: "/candidate/state",
+      });
+      if (candidate.adminId) {
+        await notifyUser({
+          userId: candidate.adminId,
+          type: `assessment.${body.decision}`,
+          title: `${candidate.name}: ${stage} ${body.decision}`,
+          body: `${user.username} marked ${body.decision} on ${stage} assessment.`,
+          href: "/admin/candidates",
+        });
+      }
+    }
 
     return jsonOk({ item: toObject(assessment) });
   });

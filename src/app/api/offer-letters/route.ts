@@ -5,6 +5,7 @@ import { AdminProfile, CandidateProfile, OfferLetter } from "@/models";
 import { sendEmail } from "@/lib/email/send";
 import { DEFAULT_NOTIFICATION_TEMPLATES, renderTemplate } from "@/data/sample-messages";
 import { writeAudit } from "@/lib/audit";
+import { notifyUser } from "@/lib/notify";
 
 export async function GET() {
   return withAuth(["admin"], async (user) => {
@@ -132,6 +133,16 @@ export async function POST(req: NextRequest) {
       summary: `${user.username} ${body.sendNow ? "sent" : "saved"} offer for ${candidate.name}`,
       adminId: user.id,
     });
+
+    if (body.sendNow) {
+      await notifyUser({
+        userId: candidate.userId,
+        type: "offer.sent",
+        title: "Offer letter received",
+        body: `You received an offer from ${admin?.companyName || "the hiring team"}.`,
+        href: "/candidate/state",
+      });
+    }
 
     return jsonOk({ item: toObject(offer) }, { status: body.id ? 200 : 201 });
   });

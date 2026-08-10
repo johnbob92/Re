@@ -9,3 +9,4 @@ export * from "./OfferLetter";
 export * from "./Connection";
 export * from "./MessageLog";
 export * from "./AuditLog";
+export * from "./AppNotification";

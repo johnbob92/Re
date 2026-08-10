@@ -115,6 +115,10 @@ Message history: `/admin/messages` and `/recruiter/messages` (email/Slack send l
 
 Basic in-memory rate limits protect login/register/webhooks/activity endpoints.
 
+In-app notification inbox (bell icon) for pipeline/offer/interview events.
+
+Admin bulk candidate CSV import: Candidates page → Import CSV (`/api/candidates/import`).
+
 ## Scripts
 
 ```bash

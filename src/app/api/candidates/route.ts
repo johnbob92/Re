@@ -12,6 +12,7 @@ import { DEFAULT_NOTIFICATION_TEMPLATES, renderTemplate } from "@/data/sample-me
 import { ageFromBirthday } from "@/lib/utils/dates";
 import { bumpRecruiterHireStats } from "@/lib/performance";
 import { writeAudit } from "@/lib/audit";
+import { notifyMany, notifyUser } from "@/lib/notify";
 import type { CandidateStatus } from "@/types";
 
 export async function GET(req: NextRequest) {
@@ -250,6 +251,36 @@ export async function PATCH(req: NextRequest) {
       },
       adminId: user.id,
     });
+
+    await notifyUser({
+      userId: candidate.userId,
+      type: `candidate.${body.action}`,
+      title: "Pipeline update",
+      body: `Your status is now ${candidate.status.replaceAll("_", " ")}.`,
+      href: "/candidate/state",
+    });
+
+    if (body.action === "pass_hr" && body.techRecruiterId) {
+      await notifyUser({
+        userId: body.techRecruiterId,
+        type: "candidate.assigned_tech",
+        title: "New technical interview assigned",
+        body: `${candidate.name} is ready for technical interview scheduling.`,
+        href: "/recruiter/connected",
+      });
+    }
+
+    if (body.action === "mark_hired") {
+      await notifyMany(
+        [candidate.recruiterId, candidate.techRecruiterId, user.id],
+        {
+          type: "candidate.hired",
+          title: "Candidate hired",
+          body: `${candidate.name} was marked hired.`,
+          href: "/admin/candidates",
+        }
+      );
+    }
 
     return jsonOk({ item: toObject(candidate) });
   });
