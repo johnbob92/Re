@@ -5,6 +5,7 @@ import { hashPassword } from "@/lib/auth/password";
 import { signToken } from "@/lib/auth/jwt";
 import { attachSessionCookie } from "@/lib/auth/session";
 import { jsonError } from "@/lib/api";
+import { clientKey, rateLimit } from "@/lib/rate-limit";
 import {
   User,
   AdminProfile,
@@ -42,6 +43,15 @@ const schema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
+    const limited = rateLimit({
+      key: clientKey(req, "register"),
+      limit: 10,
+      windowMs: 60_000,
+    });
+    if (!limited.ok) {
+      return jsonError("Too many registration attempts. Try again shortly.", 429);
+    }
+
     await connectDB();
     const body = schema.parse(await req.json());
 

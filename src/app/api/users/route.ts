@@ -3,6 +3,7 @@ import { z } from "zod";
 import { jsonError, jsonOk, toObject, withAuth } from "@/lib/api";
 import { User } from "@/models";
 import { hashPassword } from "@/lib/auth/password";
+import { writeAudit } from "@/lib/audit";
 
 export async function GET(req: NextRequest) {
   return withAuth(["superadmin"], async () => {
@@ -45,7 +46,7 @@ const patchSchema = z.object({
 });
 
 export async function PATCH(req: NextRequest) {
-  return withAuth(["superadmin"], async () => {
+  return withAuth(["superadmin"], async (actor) => {
     const body = patchSchema.parse(await req.json());
     const user = await User.findById(body.userId);
     if (!user) return jsonError("User not found", 404);
@@ -54,6 +55,13 @@ export async function PATCH(req: NextRequest) {
       user.status = "deleted";
       user.email = `deleted+${user._id}@hireflow.local`;
       await user.save();
+      await writeAudit({
+        actor,
+        action: "user.delete",
+        entityType: "user",
+        entityId: user._id,
+        summary: `${actor.username} deleted account ${user.username}`,
+      });
       return jsonOk({ ok: true, deleted: true });
     }
 
@@ -61,6 +69,19 @@ export async function PATCH(req: NextRequest) {
     if (body.status) user.status = body.status;
     if (body.password) user.passwordHash = await hashPassword(body.password);
     await user.save();
+
+    await writeAudit({
+      actor,
+      action: "user.update",
+      entityType: "user",
+      entityId: user._id,
+      summary: `${actor.username} updated ${user.username}`,
+      meta: {
+        role: body.role,
+        status: body.status,
+        passwordReset: Boolean(body.password),
+      },
+    });
 
     return jsonOk({ user: toObject(await User.findById(user._id).select("-passwordHash")) });
   });

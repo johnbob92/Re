@@ -14,6 +14,8 @@ import {
   Link2,
   Settings2,
   Sparkles,
+  History,
+  Mail,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { ThemeControls } from "@/components/theme/ThemeControls";
@@ -28,11 +30,14 @@ const NAV: Record<UserRole, NavItem[]> = {
   superadmin: [
     { href: "/superadmin/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/superadmin/managing", label: "Managing", icon: Settings2 },
+    { href: "/superadmin/activity", label: "Activity", icon: History },
   ],
   admin: [
     { href: "/admin/candidates", label: "Candidates", icon: Users },
     { href: "/admin/recruiters", label: "Recruiters", icon: BriefcaseBusiness },
     { href: "/admin/offers", label: "Offers", icon: ClipboardCheck },
+    { href: "/admin/messages", label: "Messages", icon: Mail },
+    { href: "/admin/activity", label: "Activity", icon: History },
     { href: "/admin/calendar", label: "Calendar", icon: CalendarDays },
     { href: "/admin/integrations", label: "Integrations", icon: Settings2 },
     { href: "/admin/profile", label: "Profile", icon: UserRound },
@@ -41,6 +46,7 @@ const NAV: Record<UserRole, NavItem[]> = {
     { href: "/recruiter/connected", label: "Connected", icon: Link2 },
     { href: "/recruiter/scheduled", label: "Scheduled", icon: CalendarDays },
     { href: "/recruiter/assessment", label: "Assessment", icon: ClipboardCheck },
+    { href: "/recruiter/messages", label: "Messages", icon: Mail },
     { href: "/recruiter/calendar", label: "Calendar", icon: CalendarDays },
     { href: "/recruiter/profile", label: "Profile", icon: UserRound },
   ],

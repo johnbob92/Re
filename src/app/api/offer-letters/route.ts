@@ -4,6 +4,7 @@ import { jsonError, jsonOk, toObject, withAuth } from "@/lib/api";
 import { AdminProfile, CandidateProfile, OfferLetter } from "@/models";
 import { sendEmail } from "@/lib/email/send";
 import { DEFAULT_NOTIFICATION_TEMPLATES, renderTemplate } from "@/data/sample-messages";
+import { writeAudit } from "@/lib/audit";
 
 export async function GET() {
   return withAuth(["admin"], async (user) => {
@@ -123,6 +124,15 @@ export async function POST(req: NextRequest) {
       await candidate.save();
     }
 
+    await writeAudit({
+      actor: user,
+      action: body.sendNow ? "offer.send" : "offer.save",
+      entityType: "offer",
+      entityId: offer._id,
+      summary: `${user.username} ${body.sendNow ? "sent" : "saved"} offer for ${candidate.name}`,
+      adminId: user.id,
+    });
+
     return jsonOk({ item: toObject(offer) }, { status: body.id ? 200 : 201 });
   });
 }
@@ -154,6 +164,15 @@ export async function PATCH(req: NextRequest) {
         },
       });
     }
+
+    await writeAudit({
+      actor: user,
+      action: `offer.${body.status}`,
+      entityType: "offer",
+      entityId: offer._id,
+      summary: `${user.username} marked offer ${body.status}`,
+      adminId: user.id,
+    });
 
     return jsonOk({ item: toObject(offer) });
   });

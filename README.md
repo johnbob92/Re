@@ -109,6 +109,12 @@ CSV export buttons are available on Super Admin dashboard, Admin candidates/recr
 
 Offer letters include a formatting toolbar + live HTML preview.
 
+Activity log: `/admin/activity` and `/superadmin/activity` (audit trail for pipeline/auth/user actions).
+
+Message history: `/admin/messages` and `/recruiter/messages` (email/Slack send logs).
+
+Basic in-memory rate limits protect login/register/webhooks/activity endpoints.
+
 ## Scripts
 
 ```bash

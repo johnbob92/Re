@@ -10,6 +10,7 @@ import {
 import { sendEmail } from "@/lib/email/send";
 import { DEFAULT_NOTIFICATION_TEMPLATES, renderTemplate } from "@/data/sample-messages";
 import { ageFromBirthday } from "@/lib/utils/dates";
+import { writeAudit } from "@/lib/audit";
 
 export async function GET() {
   return withAuth(["recruiter", "admin"], async (user) => {
@@ -177,6 +178,24 @@ export async function PUT(req: NextRequest) {
     }
 
     await candidate.save();
+
+    await writeAudit({
+      actor: user,
+      action:
+        body.decision && body.decision !== "pending"
+          ? `assessment.${body.decision}`
+          : "assessment.save",
+      entityType: "assessment",
+      entityId: assessment._id,
+      summary: `${user.username} ${
+        body.decision && body.decision !== "pending"
+          ? `marked ${body.decision}`
+          : "updated assessment"
+      } for ${candidate.name} (${stage})`,
+      meta: { stage, decision: body.decision || "pending" },
+      adminId: candidate.adminId || user.adminId,
+    });
+
     return jsonOk({ item: toObject(assessment) });
   });
 }

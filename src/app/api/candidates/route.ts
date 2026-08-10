@@ -11,6 +11,7 @@ import { sendEmail } from "@/lib/email/send";
 import { DEFAULT_NOTIFICATION_TEMPLATES, renderTemplate } from "@/data/sample-messages";
 import { ageFromBirthday } from "@/lib/utils/dates";
 import { bumpRecruiterHireStats } from "@/lib/performance";
+import { writeAudit } from "@/lib/audit";
 import type { CandidateStatus } from "@/types";
 
 export async function GET(req: NextRequest) {
@@ -236,6 +237,20 @@ export async function PATCH(req: NextRequest) {
     }
 
     await candidate.save();
+
+    await writeAudit({
+      actor: user,
+      action: `candidate.${body.action}`,
+      entityType: "candidate",
+      entityId: candidate._id,
+      summary: `${user.username} ran ${body.action} on ${candidate.name}`,
+      meta: {
+        status: candidate.status,
+        techRecruiterId: body.techRecruiterId,
+      },
+      adminId: user.id,
+    });
+
     return jsonOk({ item: toObject(candidate) });
   });
 }
