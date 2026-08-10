@@ -10,7 +10,7 @@ Clean, modern multi-tenant recruiting platform built with:
 ## Roles
 
 1. **Super Admin** — manage all users (reset password / role / delete), global dashboard + graphs
-2. **Admin** — company profile, recruiters, candidates pipeline, offer letters, calendar
+2. **Admin** — dashboard, company profile, recruiters, candidates pipeline, analytics, offer letters, calendar
 3. **Recruiter (HR / Tech)** — connected candidates, scheduled interviews, assessments, notification templates, calendar
 4. **Candidate** — register, schedule via Calendly, status tracking, calendar, join Meet at T-5
 
@@ -125,7 +125,13 @@ Offer download / print-to-PDF: `/api/candidate/offers/:id/download` (candidate +
 
 Recruiter availability: timezone + weekday/time window on Recruiter Profile. Scheduling (manual + Calendly webhook) rejects times outside the window or overlapping existing interviews.
 
+Admin pipeline dashboard: `/admin/dashboard` (default admin home) with charts + recent candidates.
+
 Admin team analytics: `/admin/analytics` — pass rates by recruiter, stage breakdown, hire counters, CSV export.
+
+Interview cancel / reschedule: recruiter Scheduled + candidate Schedule pages; `PATCH /api/interviews` actions `cancel` | `reschedule` (availability + conflict checks, calendar update/delete, notifications + audit).
+
+Admin candidate search hits the API `q` parameter (debounced), not only client-side filtering.
 
 Permission matrix utilities live in `src/lib/permissions.ts` (covered by `npm test`).
 

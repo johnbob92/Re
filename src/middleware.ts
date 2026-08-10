@@ -14,7 +14,7 @@ const PUBLIC = [
 
 const ROLE_HOME = {
   superadmin: "/superadmin/dashboard",
-  admin: "/admin/candidates",
+  admin: "/admin/dashboard",
   recruiter: "/recruiter/connected",
   candidate: "/candidate/state",
 } as const;

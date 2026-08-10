@@ -4,7 +4,11 @@ const buckets = new Map<string, Bucket>();
 
 /**
  * Simple in-memory rate limiter (per server instance).
- * Good enough for single-node / demo; replace with Redis in multi-node prod.
+ * Good enough for single-node / demo.
+ *
+ * Multi-node production: swap the Map-backed bucket store for Redis
+ * (INCR + EXPIRE / sliding window) keyed by the same `clientKey()` value.
+ * Keep this function signature so route call sites stay unchanged.
  */
 export function rateLimit(options: {
   key: string;

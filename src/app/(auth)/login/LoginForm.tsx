@@ -28,7 +28,7 @@ const DEMO: Record<string, { email: string; password: string; label: string }> =
 
 const HOME: Record<UserRole, string> = {
   superadmin: "/superadmin/dashboard",
-  admin: "/admin/candidates",
+  admin: "/admin/dashboard",
   recruiter: "/recruiter/connected",
   candidate: "/candidate/state",
 };

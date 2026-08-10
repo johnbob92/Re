@@ -63,10 +63,11 @@ export default function AdminCandidatesPage() {
   const [importCsv, setImportCsv] = useState("");
   const [importBusy, setImportBusy] = useState(false);
 
-  async function load() {
+  async function load(search = query) {
     setLoading(true);
     const params = new URLSearchParams({ pageSize: "100" });
     if (statusFilter) params.set("status", statusFilter);
+    if (search.trim()) params.set("q", search.trim());
     const [cRes, rRes] = await Promise.all([
       fetch(`/api/candidates?${params.toString()}`),
       fetch("/api/recruiters"),
@@ -83,20 +84,20 @@ export default function AdminCandidatesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusFilter]);
 
+  useEffect(() => {
+    const id = setTimeout(() => {
+      void load(query);
+    }, 300);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query]);
+
   const techRecruiters = useMemo(
     () => recruiters.filter((r) => r.recruiterType === "tech"),
     [recruiters]
   );
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return items;
-    return items.filter((c) =>
-      [c.name, c.email, c.location, c.whatsapp, c.recruiterId?.username]
-        .filter(Boolean)
-        .some((v) => String(v).toLowerCase().includes(q))
-    );
-  }, [items, query]);
+  const filtered = items;
 
   function recruiterUserId(r: RecruiterOption) {
     return typeof r.userId === "string" ? r.userId : r.userId?._id;

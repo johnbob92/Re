@@ -35,6 +35,7 @@ const NAV: Record<UserRole, NavItem[]> = {
     { href: "/superadmin/activity", label: "Activity", icon: History },
   ],
   admin: [
+    { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/admin/candidates", label: "Candidates", icon: Users },
     { href: "/admin/recruiters", label: "Recruiters", icon: BriefcaseBusiness },
     { href: "/admin/analytics", label: "Analytics", icon: ChartColumn },

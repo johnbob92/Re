@@ -5,6 +5,25 @@ import { DashboardShell } from "@/components/layout/DashboardShell";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Field, Input, Select } from "@/components/ui/Input";
+import { Modal } from "@/components/ui/Modal";
+import { Badge } from "@/components/ui/Badge";
+import { formatDateTime } from "@/lib/utils/dates";
+
+interface InterviewItem {
+  _id: string;
+  stage: string;
+  status: string;
+  scheduledAt: string;
+  googleMeetLink?: string;
+  canJoin?: boolean;
+  minutesUntil?: number;
+}
+
+function toLocalInputValue(iso: string) {
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
 
 export default function CandidateSchedulePage() {
   const [embedUrl, setEmbedUrl] = useState("");
@@ -14,6 +33,10 @@ export default function CandidateSchedulePage() {
   const [scheduledAt, setScheduledAt] = useState("");
   const [stage, setStage] = useState("hr");
   const [message, setMessage] = useState("");
+  const [interviews, setInterviews] = useState<InterviewItem[]>([]);
+  const [rescheduleTarget, setRescheduleTarget] = useState<InterviewItem | null>(null);
+  const [newTime, setNewTime] = useState("");
+  const [busyId, setBusyId] = useState("");
   const [availability, setAvailability] = useState<{
     name?: string;
     timezone?: string;
@@ -25,20 +48,30 @@ export default function CandidateSchedulePage() {
 
   const weekdayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
+  async function loadInterviews() {
+    const res = await fetch("/api/interviews?status=scheduled");
+    const data = await res.json();
+    setInterviews(data.items || []);
+  }
+
   useEffect(() => {
-    Promise.all([fetch("/api/integrations/calendly"), fetch("/api/profile")]).then(
-      async ([cRes, pRes]) => {
-        const c = await cRes.json();
-        const p = await pRes.json();
-        setEmbedUrl(c.embedUrl);
-        setSchedulingUrl(c.schedulingUrl);
-        setCandidateId(p.profile?._id || "");
-        setEmail(p.user?.email || p.profile?.email || "");
-        setAvailability(p.recruiterAvailability || null);
-        if (p.profile?.status === "hr_pass") setStage("tech");
-        if (p.profile?.status === "tech_pass") setStage("final");
-      }
-    );
+    Promise.all([
+      fetch("/api/integrations/calendly"),
+      fetch("/api/profile"),
+      fetch("/api/interviews?status=scheduled"),
+    ]).then(async ([cRes, pRes, iRes]) => {
+      const c = await cRes.json();
+      const p = await pRes.json();
+      const i = await iRes.json();
+      setEmbedUrl(c.embedUrl);
+      setSchedulingUrl(c.schedulingUrl);
+      setCandidateId(p.profile?._id || "");
+      setEmail(p.user?.email || p.profile?.email || "");
+      setAvailability(p.recruiterAvailability || null);
+      setInterviews(i.items || []);
+      if (p.profile?.status === "hr_pass") setStage("tech");
+      if (p.profile?.status === "tech_pass") setStage("final");
+    });
   }, []);
 
   async function book(e: FormEvent) {
@@ -50,7 +83,7 @@ export default function CandidateSchedulePage() {
       body: JSON.stringify({
         candidateId,
         stage,
-        scheduledAt,
+        scheduledAt: new Date(scheduledAt).toISOString(),
       }),
     });
     const data = await res.json();
@@ -59,6 +92,10 @@ export default function CandidateSchedulePage() {
         ? `Interview booked. Google Meet: ${data.item?.googleMeetLink || "created"}`
         : data.error || "Booking failed"
     );
+    if (res.ok) {
+      setScheduledAt("");
+      loadInterviews();
+    }
   }
 
   async function simulateCalendlyWebhook() {
@@ -87,13 +124,109 @@ export default function CandidateSchedulePage() {
         ? `Calendly webhook booked ${data.stage} interview. Meet: ${data.meetLink}`
         : data.error || "Webhook simulation failed"
     );
+    if (res.ok) loadInterviews();
+  }
+
+  async function cancelInterview(item: InterviewItem) {
+    if (!confirm("Cancel this interview?")) return;
+    setBusyId(item._id);
+    const res = await fetch("/api/interviews", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ interviewId: item._id, action: "cancel" }),
+    });
+    const data = await res.json();
+    setBusyId("");
+    setMessage(res.ok ? "Interview cancelled" : data.error || "Cancel failed");
+    if (res.ok) loadInterviews();
+  }
+
+  async function submitReschedule() {
+    if (!rescheduleTarget || !newTime) return;
+    setBusyId(rescheduleTarget._id);
+    const res = await fetch("/api/interviews", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        interviewId: rescheduleTarget._id,
+        action: "reschedule",
+        scheduledAt: new Date(newTime).toISOString(),
+      }),
+    });
+    const data = await res.json();
+    setBusyId("");
+    setMessage(res.ok ? "Interview rescheduled" : data.error || "Reschedule failed");
+    if (res.ok) {
+      setRescheduleTarget(null);
+      setNewTime("");
+      loadInterviews();
+    }
   }
 
   return (
     <DashboardShell
       title="Schedule Interview"
-      subtitle="Book using your recruiter's Calendly link. Webhooks auto-create Meet links."
+      subtitle="Book via Calendly or confirm a time. Cancel/reschedule upcoming interviews anytime."
     >
+      {interviews.length ? (
+        <Card className="mb-4">
+          <h3 className="mb-3 font-semibold">Upcoming interviews</h3>
+          <div className="space-y-3">
+            {interviews.map((item) => (
+              <div
+                key={item._id}
+                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-3"
+              >
+                <div>
+                  <div className="flex items-center gap-2">
+                    <Badge className="capitalize">{item.stage}</Badge>
+                    <span className="text-sm font-medium">{formatDateTime(item.scheduledAt)}</span>
+                  </div>
+                  <p className="mt-1 text-xs text-[var(--muted)]">
+                    {typeof item.minutesUntil === "number" && item.minutesUntil > 0
+                      ? `Starts in ${item.minutesUntil} min`
+                      : "Started / past"}
+                    {item.googleMeetLink ? (
+                      <>
+                        {" · "}
+                        <a
+                          href={item.googleMeetLink}
+                          target="_blank"
+                          className="text-[var(--primary)] underline"
+                        >
+                          Meet link
+                        </a>
+                      </>
+                    ) : null}
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    disabled={busyId === item._id}
+                    onClick={() => {
+                      setRescheduleTarget(item);
+                      setNewTime(toLocalInputValue(item.scheduledAt));
+                    }}
+                  >
+                    Reschedule
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="danger"
+                    disabled={busyId === item._id}
+                    onClick={() => cancelInterview(item)}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      ) : null}
+
       <div className="grid gap-4 xl:grid-cols-5">
         <Card className="xl:col-span-3 overflow-hidden p-0">
           {embedUrl ? (
@@ -106,8 +239,8 @@ export default function CandidateSchedulePage() {
           <div>
             <h3 className="font-semibold">Confirm scheduled time</h3>
             <p className="text-sm text-[var(--muted)]">
-              After picking a time in Calendly, save it here — or simulate the Calendly webhook that
-              production uses when invitee.created fires.
+              After picking a time in Calendly, save it here. Demo environments can also simulate the
+              Calendly webhook.
             </p>
             <a
               href={schedulingUrl || "#"}
@@ -167,6 +300,33 @@ export default function CandidateSchedulePage() {
           {message ? <p className="text-sm text-[var(--primary)]">{message}</p> : null}
         </Card>
       </div>
+
+      <Modal
+        open={Boolean(rescheduleTarget)}
+        onClose={() => setRescheduleTarget(null)}
+        title="Reschedule interview"
+      >
+        <div className="space-y-3">
+          <p className="text-sm text-[var(--muted)]">
+            Choose a new time within your recruiter&apos;s availability window.
+          </p>
+          <Field label="New date & time">
+            <Input
+              type="datetime-local"
+              value={newTime}
+              onChange={(e) => setNewTime(e.target.value)}
+            />
+          </Field>
+          <div className="flex justify-end gap-2">
+            <Button variant="secondary" onClick={() => setRescheduleTarget(null)}>
+              Close
+            </Button>
+            <Button onClick={submitReschedule} disabled={!newTime || busyId === rescheduleTarget?._id}>
+              Save new time
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </DashboardShell>
   );
 }

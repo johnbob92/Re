@@ -45,7 +45,7 @@ describe("role permission matrix", () => {
 
   it("maps each role to a home route", () => {
     expect(ROLE_HOME.superadmin).toBe("/superadmin/dashboard");
-    expect(ROLE_HOME.admin).toBe("/admin/candidates");
+    expect(ROLE_HOME.admin).toBe("/admin/dashboard");
     expect(ROLE_HOME.recruiter).toBe("/recruiter/connected");
     expect(ROLE_HOME.candidate).toBe("/candidate/state");
   });

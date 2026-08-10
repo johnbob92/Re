@@ -61,7 +61,7 @@ export function assertCan(role: UserRole, permission: Permission) {
 /** Useful for route guards / docs / tests */
 export const ROLE_HOME: Record<UserRole, string> = {
   superadmin: "/superadmin/dashboard",
-  admin: "/admin/candidates",
+  admin: "/admin/dashboard",
   recruiter: "/recruiter/connected",
   candidate: "/candidate/state",
 };

@@ -7,19 +7,42 @@ import {
   NotificationTemplate,
   RecruiterProfile,
 } from "@/models";
-import { createGoogleCalendarEvent } from "@/lib/google/calendar";
+import {
+  createGoogleCalendarEvent,
+  deleteGoogleCalendarEvent,
+  updateGoogleCalendarEvent,
+} from "@/lib/google/calendar";
 import { sendEmail } from "@/lib/email/send";
 import { DEFAULT_NOTIFICATION_TEMPLATES, renderTemplate } from "@/data/sample-messages";
 import { canJoinInterview, minutesUntil } from "@/lib/utils/dates";
 import { postSlackMessage } from "@/lib/slack/client";
 import { notifyMany } from "@/lib/notify";
 import { assertRecruiterSlotAvailable } from "@/lib/scheduling";
+import { writeAudit } from "@/lib/audit";
 import { addMinutes } from "date-fns";
+import type { AuthUser } from "@/types";
+
+function canManageInterview(
+  user: AuthUser,
+  interview: { recruiterId: unknown; adminId: unknown; candidateUserId: unknown }
+) {
+  if (user.role === "admin") return String(interview.adminId) === user.id;
+  if (user.role === "recruiter") return String(interview.recruiterId) === user.id;
+  if (user.role === "candidate") return String(interview.candidateUserId) === user.id;
+  return false;
+}
+
+function previousStatusForStage(stage: string) {
+  if (stage === "tech") return "hr_pass" as const;
+  if (stage === "final") return "tech_pass" as const;
+  return "connected" as const;
+}
 
 export async function GET(req: NextRequest) {
   return withAuth(["admin", "recruiter", "candidate", "superadmin"], async (user) => {
     const { searchParams } = new URL(req.url);
     const stage = searchParams.get("stage");
+    const status = searchParams.get("status") || "scheduled";
     const filter: Record<string, unknown> = {};
 
     if (user.role === "admin") filter.adminId = user.id;
@@ -29,6 +52,7 @@ export async function GET(req: NextRequest) {
     }
     if (user.role === "candidate") filter.candidateUserId = user.id;
     if (stage) filter.stage = stage;
+    if (status !== "all") filter.status = status;
 
     const items = await Interview.find(filter)
       .populate({
@@ -42,7 +66,7 @@ export async function GET(req: NextRequest) {
 
     const enriched = items.map((item) => ({
       ...item,
-      canJoin: canJoinInterview(item.scheduledAt),
+      canJoin: item.status === "scheduled" && canJoinInterview(item.scheduledAt),
       minutesUntil: minutesUntil(item.scheduledAt),
     }));
 
@@ -143,7 +167,9 @@ export async function POST(req: NextRequest) {
 
 const actionSchema = z.object({
   interviewId: z.string(),
-  action: z.enum(["reminder", "waiting", "join_notify"]),
+  action: z.enum(["reminder", "waiting", "join_notify", "cancel", "reschedule"]),
+  scheduledAt: z.string().optional(),
+  notes: z.string().optional(),
 });
 
 export async function PATCH(req: NextRequest) {
@@ -151,9 +177,133 @@ export async function PATCH(req: NextRequest) {
     const body = actionSchema.parse(await req.json());
     const interview = await Interview.findById(body.interviewId);
     if (!interview) return jsonError("Interview not found", 404);
+    if (!canManageInterview(user, interview)) return jsonError("Forbidden", 403);
 
     const candidate = await CandidateProfile.findById(interview.candidateId);
     if (!candidate) return jsonError("Candidate not found", 404);
+
+    if (body.action === "cancel") {
+      if (interview.status !== "scheduled") {
+        return jsonError("Only scheduled interviews can be cancelled", 400);
+      }
+
+      interview.status = "cancelled";
+      if (body.notes) interview.notes = body.notes;
+      await interview.save();
+      await deleteGoogleCalendarEvent(interview.googleCalendarEventId);
+
+      const revert = previousStatusForStage(interview.stage);
+      candidate.status = revert;
+      if (interview.stage === "hr") candidate.hrScheduledAt = undefined;
+      if (interview.stage === "tech") candidate.techScheduledAt = undefined;
+      if (interview.stage === "final") candidate.finalScheduledAt = undefined;
+      candidate.statusHistory.push({
+        status: revert,
+        at: new Date(),
+        by: user.id as unknown as never,
+        note: `${interview.stage} interview cancelled by ${user.role}`,
+      });
+      await candidate.save();
+
+      await postSlackMessage(
+        `❌ ${interview.stage.toUpperCase()} interview cancelled for ${candidate.name}`
+      );
+      await notifyMany([candidate.userId, interview.recruiterId, candidate.adminId], {
+        type: "interview.cancelled",
+        title: `${interview.stage.toUpperCase()} interview cancelled`,
+        body: `${candidate.name} — cancelled by ${user.username}`,
+        href:
+          user.role === "candidate" ? "/candidate/schedule" : "/recruiter/scheduled",
+        meta: { interviewId: String(interview._id) },
+      });
+
+      await writeAudit({
+        actor: user,
+        action: "interview.cancel",
+        entityType: "interview",
+        entityId: interview._id,
+        summary: `${user.username} cancelled ${interview.stage} interview for ${candidate.name}`,
+        adminId: interview.adminId,
+      });
+
+      return jsonOk({ item: toObject(interview), candidateStatus: candidate.status });
+    }
+
+    if (body.action === "reschedule") {
+      if (interview.status !== "scheduled") {
+        return jsonError("Only scheduled interviews can be rescheduled", 400);
+      }
+      if (!body.scheduledAt) return jsonError("scheduledAt is required for reschedule");
+
+      const start = new Date(body.scheduledAt);
+      if (Number.isNaN(start.getTime())) {
+        return jsonError("Invalid scheduledAt datetime", 400);
+      }
+      const end = addMinutes(start, 45);
+
+      const slot = await assertRecruiterSlotAvailable({
+        recruiterUserId: String(interview.recruiterId),
+        start,
+        durationMinutes: 45,
+        ignoreInterviewId: String(interview._id),
+      });
+      if (!slot.ok) return jsonError(slot.reason, 409);
+
+      const calendar = await updateGoogleCalendarEvent({
+        eventId: interview.googleCalendarEventId,
+        summary: `${interview.stage.toUpperCase()} Interview — ${candidate.name}`,
+        description: body.notes || interview.notes || "HireFlow rescheduled interview",
+        start,
+        end,
+        attendeeEmails: [candidate.email, user.email],
+      });
+
+      interview.scheduledAt = start;
+      interview.endsAt = end;
+      interview.status = "scheduled";
+      interview.googleCalendarEventId = calendar.eventId;
+      if (calendar.hangoutLink) interview.googleMeetLink = calendar.hangoutLink;
+      interview.reminderSentAt = undefined;
+      interview.waitingSentAt = undefined;
+      interview.joinNotifiedAt = undefined;
+      if (body.notes) interview.notes = body.notes;
+      await interview.save();
+
+      candidate.status = "scheduled";
+      if (interview.stage === "hr") candidate.hrScheduledAt = start;
+      if (interview.stage === "tech") candidate.techScheduledAt = start;
+      if (interview.stage === "final") candidate.finalScheduledAt = start;
+      candidate.statusHistory.push({
+        status: "scheduled",
+        at: new Date(),
+        by: user.id as unknown as never,
+        note: `${interview.stage} interview rescheduled`,
+      });
+      await candidate.save();
+
+      await postSlackMessage(
+        `🔁 ${interview.stage.toUpperCase()} interview rescheduled for ${candidate.name} at ${start.toLocaleString()}`
+      );
+      await notifyMany([candidate.userId, interview.recruiterId, candidate.adminId], {
+        type: "interview.rescheduled",
+        title: `${interview.stage.toUpperCase()} interview rescheduled`,
+        body: `${candidate.name} — ${start.toLocaleString()}`,
+        href:
+          user.role === "candidate" ? "/candidate/schedule" : "/recruiter/scheduled",
+        meta: { interviewId: String(interview._id) },
+      });
+
+      await writeAudit({
+        actor: user,
+        action: "interview.reschedule",
+        entityType: "interview",
+        entityId: interview._id,
+        summary: `${user.username} rescheduled ${interview.stage} interview for ${candidate.name}`,
+        adminId: interview.adminId,
+      });
+
+      return jsonOk({ item: toObject(interview), calendar });
+    }
 
     const recruiter = await RecruiterProfile.findOne({ userId: interview.recruiterId });
     const type = body.action === "waiting" ? "waiting" : "reminder";
@@ -171,6 +321,9 @@ export async function PATCH(req: NextRequest) {
     };
 
     if (body.action === "reminder" || body.action === "waiting") {
+      if (user.role === "candidate") {
+        return jsonError("Candidates cannot send reminder/waiting messages", 403);
+      }
       await sendEmail({
         fromUserId: user.id,
         toEmail: candidate.email,
@@ -182,7 +335,6 @@ export async function PATCH(req: NextRequest) {
 
       if (body.action === "reminder") {
         interview.reminderSentAt = new Date();
-        // also notify recruiter
         if (recruiter?.email) {
           await sendEmail({
             fromUserId: user.id,

@@ -13,7 +13,7 @@ import type { UserRole } from "@/types";
 
 const HOME: Record<UserRole, string> = {
   superadmin: "/superadmin/dashboard",
-  admin: "/admin/candidates",
+  admin: "/admin/dashboard",
   recruiter: "/recruiter/connected",
   candidate: "/candidate/state",
 };
