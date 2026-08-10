@@ -1,0 +1,117 @@
+@import "tailwindcss";
+
+:root,
+html[data-theme="light"] {
+  --background: #f5f8ff;
+  --foreground: #0f172a;
+  --surface: #ffffff;
+  --surface-2: #f1f5f9;
+  --surface-3: #e2e8f0;
+  --border: #e2e8f0;
+  --muted: #64748b;
+  --primary: #2563eb;
+  --accent: #38bdf8;
+}
+
+html[data-theme="dark"] {
+  --background: #0b1220;
+  --foreground: #e5eefc;
+  --surface: #111827;
+  --surface-2: #1f2937;
+  --surface-3: #334155;
+  --border: #243044;
+  --muted: #94a3b8;
+  --primary: #3b82f6;
+  --accent: #22d3ee;
+}
+
+html[data-color="ocean"] {
+  --primary: #2563eb;
+  --accent: #38bdf8;
+  --swatch-ocean: linear-gradient(90deg, #2563eb, #38bdf8);
+}
+html[data-color="violet"] {
+  --primary: #7c3aed;
+  --accent: #c084fc;
+  --swatch-violet: linear-gradient(90deg, #7c3aed, #c084fc);
+}
+html[data-color="emerald"] {
+  --primary: #059669;
+  --accent: #34d399;
+  --swatch-emerald: linear-gradient(90deg, #059669, #34d399);
+}
+html[data-color="sunset"] {
+  --primary: #ea580c;
+  --accent: #fbbf24;
+  --swatch-sunset: linear-gradient(90deg, #ea580c, #fbbf24);
+}
+html[data-color="rose"] {
+  --primary: #e11d48;
+  --accent: #fb7185;
+  --swatch-rose: linear-gradient(90deg, #e11d48, #fb7185);
+}
+html[data-color="slate"] {
+  --primary: #475569;
+  --accent: #94a3b8;
+  --swatch-slate: linear-gradient(90deg, #475569, #94a3b8);
+}
+
+:root {
+  --swatch-ocean: linear-gradient(90deg, #2563eb, #38bdf8);
+  --swatch-violet: linear-gradient(90deg, #7c3aed, #c084fc);
+  --swatch-emerald: linear-gradient(90deg, #059669, #34d399);
+  --swatch-sunset: linear-gradient(90deg, #ea580c, #fbbf24);
+  --swatch-rose: linear-gradient(90deg, #e11d48, #fb7185);
+  --swatch-slate: linear-gradient(90deg, #475569, #94a3b8);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), Inter, system-ui, sans-serif;
+  transition: background 0.25s ease, color 0.25s ease;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--muted) 45%, transparent);
+  border-radius: 999px;
+}
+
+.glass {
+  background: color-mix(in srgb, var(--surface) 80%, transparent);
+  backdrop-filter: blur(12px);
+}
+
+.hero-grid {
+  background-image:
+    radial-gradient(circle at 20% 20%, color-mix(in srgb, var(--primary) 18%, transparent), transparent 35%),
+    radial-gradient(circle at 80% 10%, color-mix(in srgb, var(--accent) 20%, transparent), transparent 30%),
+    linear-gradient(var(--border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size: auto, auto, 40px 40px, 40px 40px;
+}
