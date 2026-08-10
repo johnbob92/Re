@@ -9,6 +9,7 @@ const PUBLIC = [
   "/api/auth/register",
   "/api/seed",
   "/api/uploads",
+  "/api/integrations/calendly/webhook",
 ];
 
 const ROLE_HOME = {
@@ -31,7 +32,7 @@ export async function middleware(req: NextRequest) {
 
   const isPublic =
     PUBLIC.includes(pathname) ||
-    pathname.startsWith("/api/integrations/") ||
+    pathname.startsWith("/api/integrations/calendly/webhook") ||
     pathname.startsWith("/api/seed");
 
   const token = req.cookies.get(COOKIE_NAME)?.value;

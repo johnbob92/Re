@@ -32,6 +32,7 @@ const NAV: Record<UserRole, NavItem[]> = {
   admin: [
     { href: "/admin/candidates", label: "Candidates", icon: Users },
     { href: "/admin/recruiters", label: "Recruiters", icon: BriefcaseBusiness },
+    { href: "/admin/offers", label: "Offers", icon: ClipboardCheck },
     { href: "/admin/calendar", label: "Calendar", icon: CalendarDays },
     { href: "/admin/integrations", label: "Integrations", icon: Settings2 },
     { href: "/admin/profile", label: "Profile", icon: UserRound },

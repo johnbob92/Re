@@ -1,12 +1,14 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { Table, Td } from "@/components/ui/Table";
 import { Button } from "@/components/ui/Button";
 import { Field, Input, Select } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
 import { RecruiterStatusBadge } from "@/components/ui/Badge";
+import { SearchBar } from "@/components/ui/SearchBar";
+import { EmptyState, LoadingBlock } from "@/components/ui/Loading";
 import { formatDate } from "@/lib/utils/dates";
 
 interface RecruiterRow {
@@ -27,6 +29,9 @@ interface RecruiterRow {
 export default function AdminRecruitersPage() {
   const [items, setItems] = useState<RecruiterRow[]>([]);
   const [performanceView, setPerformanceView] = useState("total");
+  const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -40,10 +45,23 @@ export default function AdminRecruitersPage() {
   });
 
   async function load(view = performanceView) {
+    setLoading(true);
     const res = await fetch(`/api/recruiters?performanceView=${view}`);
     const data = await res.json();
     setItems(data.items || []);
+    setLoading(false);
   }
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return items.filter((r) => {
+      if (statusFilter && r.status !== statusFilter) return false;
+      if (!q) return true;
+      return [r.name, r.email, r.location, r.phone, r.recruiterType]
+        .filter(Boolean)
+        .some((v) => String(v).toLowerCase().includes(q));
+    });
+  }, [items, query, statusFilter]);
 
   useEffect(() => {
     load();
@@ -142,43 +160,64 @@ export default function AdminRecruitersPage() {
         </form>
       </Card>
 
-      <Table
-        headers={[
-          "Name",
-          "Location",
-          "Email",
-          "Phone",
-          "Role",
-          "Performance",
-          "Salary",
-          "Paid",
-          "Active Duration",
-          "Status",
+      <SearchBar
+        query={query}
+        onQueryChange={setQuery}
+        status={statusFilter}
+        onStatusChange={setStatusFilter}
+        placeholder="Search recruiter name, email, location..."
+        statusOptions={[
+          { value: "", label: "All statuses" },
+          { value: "active", label: "Active" },
+          { value: "invited", label: "Invited" },
+          { value: "decline", label: "Decline" },
         ]}
-      >
-        {items.map((r) => (
-          <tr key={r._id}>
-            <Td className="font-medium">{r.name}</Td>
-            <Td>{r.location || "—"}</Td>
-            <Td>{r.email}</Td>
-            <Td>{r.phone || "—"}</Td>
-            <Td className="uppercase">{r.recruiterType}</Td>
-            <Td>{r.performance}</Td>
-            <Td>
-              {r.salaryType} / {r.salaryRate}
-            </Td>
-            <Td>
-              <Button size="sm" variant={r.paid ? "success" : "secondary"} onClick={() => togglePaid(r)}>
-                {r.paid ? "True" : "False"}
-              </Button>
-            </Td>
-            <Td>{formatDate(r.activeStartDate)}</Td>
-            <Td>
-              <RecruiterStatusBadge status={r.status} />
-            </Td>
-          </tr>
-        ))}
-      </Table>
+      />
+
+      {loading ? <LoadingBlock label="Loading recruiters..." /> : null}
+      {!loading && filtered.length === 0 ? (
+        <EmptyState title="No recruiters found" description="Invite a recruiter or adjust filters." />
+      ) : null}
+
+      {!loading && filtered.length > 0 ? (
+        <Table
+          headers={[
+            "Name",
+            "Location",
+            "Email",
+            "Phone",
+            "Role",
+            "Performance",
+            "Salary",
+            "Paid",
+            "Active Duration",
+            "Status",
+          ]}
+        >
+          {filtered.map((r) => (
+            <tr key={r._id}>
+              <Td className="font-medium">{r.name}</Td>
+              <Td>{r.location || "—"}</Td>
+              <Td>{r.email}</Td>
+              <Td>{r.phone || "—"}</Td>
+              <Td className="uppercase">{r.recruiterType}</Td>
+              <Td>{r.performance}</Td>
+              <Td>
+                {r.salaryType} / {r.salaryRate}
+              </Td>
+              <Td>
+                <Button size="sm" variant={r.paid ? "success" : "secondary"} onClick={() => togglePaid(r)}>
+                  {r.paid ? "True" : "False"}
+                </Button>
+              </Td>
+              <Td>{formatDate(r.activeStartDate)}</Td>
+              <Td>
+                <RecruiterStatusBadge status={r.status} />
+              </Td>
+            </tr>
+          ))}
+        </Table>
+      ) : null}
     </DashboardShell>
   );
 }

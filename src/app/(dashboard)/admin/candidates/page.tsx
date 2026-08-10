@@ -8,6 +8,8 @@ import { CandidateStatusBadge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
 import { Field, Select, Textarea } from "@/components/ui/Input";
 import { FileUpload } from "@/components/ui/FileUpload";
+import { SearchBar } from "@/components/ui/SearchBar";
+import { EmptyState, LoadingBlock } from "@/components/ui/Loading";
 import { ageFromBirthday, formatDateTime } from "@/lib/utils/dates";
 import type { CandidateStatus } from "@/types";
 
@@ -52,26 +54,44 @@ export default function AdminCandidatesPage() {
   );
   const [offerFileUrl, setOfferFileUrl] = useState("");
   const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
 
   async function load() {
+    setLoading(true);
+    const params = new URLSearchParams({ pageSize: "100" });
+    if (statusFilter) params.set("status", statusFilter);
     const [cRes, rRes] = await Promise.all([
-      fetch("/api/candidates?pageSize=100"),
+      fetch(`/api/candidates?${params.toString()}`),
       fetch("/api/recruiters"),
     ]);
     const cData = await cRes.json();
     const rData = await rRes.json();
     setItems(cData.items || []);
     setRecruiters(rData.items || []);
+    setLoading(false);
   }
 
   useEffect(() => {
-    load();
-  }, []);
+    void load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [statusFilter]);
 
   const techRecruiters = useMemo(
     () => recruiters.filter((r) => r.recruiterType === "tech"),
     [recruiters]
   );
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return items;
+    return items.filter((c) =>
+      [c.name, c.email, c.location, c.whatsapp, c.recruiterId?.username]
+        .filter(Boolean)
+        .some((v) => String(v).toLowerCase().includes(q))
+    );
+  }, [items, query]);
 
   function recruiterUserId(r: RecruiterOption) {
     return typeof r.userId === "string" ? r.userId : r.userId?._id;
@@ -123,6 +143,33 @@ export default function AdminCandidatesPage() {
     >
       {message ? <p className="mb-3 text-sm text-emerald-600">{message}</p> : null}
 
+      <SearchBar
+        query={query}
+        onQueryChange={setQuery}
+        status={statusFilter}
+        onStatusChange={setStatusFilter}
+        placeholder="Search name, email, location, recruiter..."
+        statusOptions={[
+          { value: "", label: "All statuses" },
+          { value: "need_to_connect", label: "Need to Connect" },
+          { value: "connected", label: "Connected" },
+          { value: "scheduled", label: "Scheduled" },
+          { value: "hr_pass", label: "HR Pass" },
+          { value: "hr_failed", label: "HR Failed" },
+          { value: "tech_pass", label: "Tech Pass" },
+          { value: "tech_failed", label: "Tech Failed" },
+          { value: "final_pass", label: "Final Pass" },
+          { value: "offer_sent", label: "Offer Sent" },
+          { value: "hired", label: "Hired" },
+        ]}
+      />
+
+      {loading ? <LoadingBlock label="Loading candidates..." /> : null}
+      {!loading && filtered.length === 0 ? (
+        <EmptyState title="No candidates found" description="Try another search or status filter." />
+      ) : null}
+
+      {!loading && filtered.length > 0 ? (
       <Table
         headers={[
           "Candidate",
@@ -139,7 +186,7 @@ export default function AdminCandidatesPage() {
           "Admin Actions",
         ]}
       >
-        {items.map((c) => (
+        {filtered.map((c) => (
           <tr key={c._id}>
             <Td className="font-medium">{c.name}</Td>
             <Td>{ageFromBirthday(c.birthday) ?? "—"}</Td>
@@ -223,6 +270,7 @@ export default function AdminCandidatesPage() {
           </tr>
         ))}
       </Table>
+      ) : null}
 
       <Modal
         open={Boolean(selected)}

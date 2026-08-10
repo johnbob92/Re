@@ -10,6 +10,7 @@ export default function CandidateSchedulePage() {
   const [embedUrl, setEmbedUrl] = useState("");
   const [schedulingUrl, setSchedulingUrl] = useState("");
   const [candidateId, setCandidateId] = useState("");
+  const [email, setEmail] = useState("");
   const [scheduledAt, setScheduledAt] = useState("");
   const [stage, setStage] = useState("hr");
   const [message, setMessage] = useState("");
@@ -22,6 +23,7 @@ export default function CandidateSchedulePage() {
         setEmbedUrl(c.embedUrl);
         setSchedulingUrl(c.schedulingUrl);
         setCandidateId(p.profile?._id || "");
+        setEmail(p.user?.email || p.profile?.email || "");
         if (p.profile?.status === "hr_pass") setStage("tech");
         if (p.profile?.status === "tech_pass") setStage("final");
       }
@@ -48,10 +50,38 @@ export default function CandidateSchedulePage() {
     );
   }
 
+  async function simulateCalendlyWebhook() {
+    if (!email || !scheduledAt) {
+      setMessage("Pick a date/time first to simulate Calendly webhook booking");
+      return;
+    }
+    const eventName =
+      stage === "final"
+        ? "Final Interview"
+        : stage === "tech"
+          ? "Technical Interview"
+          : "HR Interview";
+    const res = await fetch("/api/integrations/calendly/webhook", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email,
+        startTime: new Date(scheduledAt).toISOString(),
+        eventName,
+      }),
+    });
+    const data = await res.json();
+    setMessage(
+      res.ok
+        ? `Calendly webhook booked ${data.stage} interview. Meet: ${data.meetLink}`
+        : data.error || "Webhook simulation failed"
+    );
+  }
+
   return (
     <DashboardShell
       title="Schedule Interview"
-      subtitle="Book using your recruiter's Calendly link, then confirm the slot in HireFlow"
+      subtitle="Book using your recruiter's Calendly link. Webhooks auto-create Meet links."
     >
       <div className="grid gap-4 xl:grid-cols-5">
         <Card className="xl:col-span-3 overflow-hidden p-0">
@@ -65,7 +95,8 @@ export default function CandidateSchedulePage() {
           <div>
             <h3 className="font-semibold">Confirm scheduled time</h3>
             <p className="text-sm text-[var(--muted)]">
-              After picking a time in Calendly, save it here so Google Meet + reminders are created.
+              After picking a time in Calendly, save it here — or simulate the Calendly webhook that
+              production uses when invitee.created fires.
             </p>
             <a
               href={schedulingUrl || "#"}
@@ -93,6 +124,14 @@ export default function CandidateSchedulePage() {
             </Field>
             <Button type="submit" className="w-full">
               Confirm booking
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              className="w-full"
+              onClick={simulateCalendlyWebhook}
+            >
+              Simulate Calendly webhook
             </Button>
           </form>
           {message ? <p className="text-sm text-[var(--primary)]">{message}</p> : null}

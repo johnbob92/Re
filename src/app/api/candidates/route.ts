@@ -28,7 +28,16 @@ export async function GET(req: NextRequest) {
       else filter.recruiterId = user.id;
     }
     if (status) filter.status = status;
-    if (q) filter.$text = { $search: q };
+    if (q) {
+      const rx = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
+      filter.$or = [
+        { name: rx },
+        { email: rx },
+        { location: rx },
+        { whatsapp: rx },
+        { majorStack: rx },
+      ];
+    }
 
     const [items, total] = await Promise.all([
       CandidateProfile.find(filter)

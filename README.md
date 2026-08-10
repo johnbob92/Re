@@ -97,6 +97,10 @@ Configure in `.env.local`:
 
 Admin UI: `/admin/integrations` shows connection status and Calendly/Slack controls.
 
+Admin Offers UI: `/admin/offers` for offer templates, drafts, send history, accept/decline.
+
+Calendly webhook: `POST /api/integrations/calendly/webhook` (`invitee.created`) auto-creates interviews + Meet links. Demo simulate via `PUT` with `{ email, startTime, eventName }`.
+
 Auto reminder job endpoint: `POST /api/jobs/reminders` (T-15 emails, T-5 join toasts)
 
 Interview join alerts poll every 30s in the dashboard shell for admin/recruiter/candidate roles.

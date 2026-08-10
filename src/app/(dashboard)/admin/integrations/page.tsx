@@ -139,6 +139,11 @@ export default function AdminIntegrationsPage() {
               Save Calendly
             </Button>
           </form>
+          <p className="mt-3 text-xs text-[var(--muted)]">
+            Webhook endpoint: <code>/api/integrations/calendly/webhook</code> (event{" "}
+            <code>invitee.created</code>). Set <code>CALENDLY_WEBHOOK_SIGNING_KEY</code> for
+            signature verification. Bookings auto-create Google Meet interviews.
+          </p>
         </Card>
 
         <Card>
