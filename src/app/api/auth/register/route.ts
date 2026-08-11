@@ -5,7 +5,7 @@ import { hashPassword } from "@/lib/auth/password";
 import { signToken } from "@/lib/auth/jwt";
 import { attachSessionCookie } from "@/lib/auth/session";
 import { jsonError } from "@/lib/api";
-import { clientKey, rateLimit } from "@/lib/rate-limit";
+import { clientKey, rateLimitAsync } from "@/lib/rate-limit";
 import { User, CandidateProfile } from "@/models";
 
 /** Public registration is candidate-only. Admin/recruiter roles are assigned by Super Admin. */
@@ -29,7 +29,7 @@ const schema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    const limited = rateLimit({
+    const limited = await rateLimitAsync({
       key: clientKey(req, "register"),
       limit: 10,
       windowMs: 60_000,

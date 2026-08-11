@@ -10,7 +10,7 @@ Clean, modern multi-tenant recruiting platform built with:
 ## Roles
 
 1. **Super Admin** — manage all users (reset password / role / delete), global dashboard + graphs
-2. **Admin** — dashboard, company profile, recruiters, candidates pipeline, analytics, offer letters, calendar
+2. **Admin** — dashboard, company profile, recruiters, candidates pipeline, analytics, offer letters, **chat oversight**, calendar
 3. **Recruiter (HR / Tech)** — connected candidates, scheduled interviews, assessments, chat, notification templates, calendar
 4. **Candidate** — public register (candidate-only), schedule via Calendly, status tracking, chat with recruiter, calendar, join Meet at T-5
 
@@ -136,6 +136,12 @@ Interview cancel / reschedule: recruiter Scheduled + candidate Schedule pages; `
 Admin candidate search hits the API `q` parameter (debounced), not only client-side filtering.
 
 Permission matrix utilities live in `src/lib/permissions.ts` (covered by `npm test`).
+
+Admin chat oversight: `/admin/chat` (read-only view of recruiter ↔ candidate threads).
+
+Rate limiting: in-memory by default; set `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` for multi-node Redis-backed limits (`rateLimitAsync`).
+
+Mobile: hamburger drawer + sticky first table column + chat list/detail split on small screens.
 
 ## Scripts
 

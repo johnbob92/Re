@@ -5,11 +5,11 @@ import {
   handleCalendlyInviteeCreated,
   verifyCalendlySignature,
 } from "@/lib/calendly/webhook";
-import { clientKey, rateLimit } from "@/lib/rate-limit";
+import { clientKey, rateLimitAsync } from "@/lib/rate-limit";
 
 export async function POST(req: NextRequest) {
   try {
-    const limited = rateLimit({
+    const limited = await rateLimitAsync({
       key: clientKey(req, "calendly-webhook"),
       limit: 120,
       windowMs: 60_000,
@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
 /** Demo helper to simulate a Calendly booking without real webhooks. */
 export async function PUT(req: NextRequest) {
   try {
-    const limited = rateLimit({
+    const limited = await rateLimitAsync({
       key: clientKey(req, "calendly-simulate"),
       limit: 30,
       windowMs: 60_000,

@@ -6,7 +6,7 @@ import { verifyPassword } from "@/lib/auth/password";
 import { signToken } from "@/lib/auth/jwt";
 import { attachSessionCookie } from "@/lib/auth/session";
 import { jsonError } from "@/lib/api";
-import { clientKey, rateLimit } from "@/lib/rate-limit";
+import { clientKey, rateLimitAsync } from "@/lib/rate-limit";
 import { writeAudit } from "@/lib/audit";
 
 const schema = z.object({
@@ -16,7 +16,7 @@ const schema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    const limited = rateLimit({
+    const limited = await rateLimitAsync({
       key: clientKey(req, "login"),
       limit: 20,
       windowMs: 60_000,

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser, requireRole } from "@/lib/auth/session";
 import { connectDB } from "@/lib/db/mongodb";
-import { clientKey, rateLimit } from "@/lib/rate-limit";
+import { clientKey, rateLimitAsync } from "@/lib/rate-limit";
 import type { AuthUser, UserRole } from "@/types";
 
 export function jsonOk<T>(data: T, init?: ResponseInit) {
@@ -26,7 +26,7 @@ export async function withAuth(
         options.req,
         options.rateLimit.suffix || `auth:${roles?.join(",") || "any"}`
       );
-      const limited = rateLimit({
+      const limited = await rateLimitAsync({
         key,
         limit: options.rateLimit.limit,
         windowMs: options.rateLimit.windowMs,

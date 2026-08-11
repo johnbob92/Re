@@ -32,10 +32,13 @@ export function ChatPanel({
   title,
   subtitle,
   counterpartLabel,
+  readOnly = false,
 }: {
   title: string;
   subtitle: string;
-  counterpartLabel: "recruiter" | "candidate";
+  counterpartLabel: "recruiter" | "candidate" | "both";
+  /** Admins oversee conversations; they can still leave a note if false. */
+  readOnly?: boolean;
 }) {
   const { user } = useAuth();
   const [threads, setThreads] = useState<ThreadItem[]>([]);
@@ -45,6 +48,7 @@ export function ChatPanel({
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [message, setMessage] = useState("");
+  const [mobileShowThread, setMobileShowThread] = useState(false);
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
   async function loadThreads() {
@@ -90,6 +94,11 @@ export function ChatPanel({
   );
 
   function peerName(thread: ThreadItem) {
+    if (counterpartLabel === "both") {
+      return `${thread.recruiter?.username || "Recruiter"} ↔ ${
+        thread.candidate?.username || "Candidate"
+      }`;
+    }
     if (counterpartLabel === "candidate") {
       return thread.candidate?.username || "Candidate";
     }
@@ -114,6 +123,11 @@ export function ChatPanel({
       }
     }
 
+    if (user?.role === "admin") {
+      setMessage("Admins oversee existing chats. Recruiters or candidates start conversations.");
+      return;
+    }
+
     const res = await fetch("/api/chat/threads", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -126,12 +140,15 @@ export function ChatPanel({
     }
     const items = await loadThreads();
     const id = data.item?._id || items[0]?._id;
-    if (id) setActiveId(id);
+    if (id) {
+      setActiveId(id);
+      setMobileShowThread(true);
+    }
   }
 
   async function send(e: FormEvent) {
     e.preventDefault();
-    if (!activeId || !text.trim()) return;
+    if (!activeId || !text.trim() || readOnly) return;
     setSending(true);
     const res = await fetch(`/api/chat/threads/${activeId}/messages`, {
       method: "POST",
@@ -169,9 +186,11 @@ export function ChatPanel({
           <EmptyState
             title="No conversations yet"
             description={
-              counterpartLabel === "recruiter"
-                ? "Start a chat with your assigned recruiter."
-                : "Open a chat with an assigned candidate from Connected, or wait for them to message you."
+              counterpartLabel === "both"
+                ? "When recruiters and candidates chat, threads appear here for oversight."
+                : counterpartLabel === "recruiter"
+                  ? "Start a chat with your assigned recruiter."
+                  : "Open a chat with an assigned candidate from Connected, or wait for them to message you."
             }
           />
           {user?.role === "candidate" || user?.role === "recruiter" ? (
@@ -184,7 +203,12 @@ export function ChatPanel({
 
       {!loading && threads.length > 0 ? (
         <div className="grid gap-4 lg:grid-cols-[280px_1fr]">
-          <Card className="max-h-[70vh] space-y-2 overflow-y-auto p-3">
+          <Card
+            className={cn(
+              "max-h-[70vh] space-y-2 overflow-y-auto p-3",
+              mobileShowThread ? "hidden lg:block" : "block"
+            )}
+          >
             <div className="mb-2 flex items-center justify-between">
               <p className="text-sm font-semibold">Conversations</p>
               {(user?.role === "candidate" || user?.role === "recruiter") && (
@@ -197,7 +221,10 @@ export function ChatPanel({
               <button
                 key={t._id}
                 type="button"
-                onClick={() => setActiveId(t._id)}
+                onClick={() => {
+                  setActiveId(t._id);
+                  setMobileShowThread(true);
+                }}
                 className={cn(
                   "w-full rounded-xl border px-3 py-2 text-left transition",
                   activeId === t._id
@@ -220,16 +247,34 @@ export function ChatPanel({
             ))}
           </Card>
 
-          <Card className="flex max-h-[70vh] flex-col p-0">
+          <Card
+            className={cn(
+              "flex max-h-[70vh] flex-col p-0",
+              mobileShowThread ? "block" : "hidden lg:flex"
+            )}
+          >
             <div className="border-b border-[var(--border)] px-4 py-3">
-              <p className="font-semibold">
-                {active ? peerName(active) : "Select a conversation"}
-              </p>
-              <p className="text-xs text-[var(--muted)]">
-                {active?.lastMessageAt
-                  ? `Last activity ${formatDateTime(active.lastMessageAt)}`
-                  : "HireFlow secure chat"}
-              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="lg:hidden"
+                  onClick={() => setMobileShowThread(false)}
+                >
+                  ← Back
+                </Button>
+                <div>
+                  <p className="font-semibold">
+                    {active ? peerName(active) : "Select a conversation"}
+                  </p>
+                  <p className="text-xs text-[var(--muted)]">
+                    {active?.lastMessageAt
+                      ? `Last activity ${formatDateTime(active.lastMessageAt)}`
+                      : "HireFlow secure chat"}
+                    {readOnly ? " · Read-only oversight" : ""}
+                  </p>
+                </div>
+              </div>
             </div>
 
             <div className="flex-1 space-y-3 overflow-y-auto p-4">
@@ -242,7 +287,7 @@ export function ChatPanel({
                   >
                     <div
                       className={cn(
-                        "max-w-[80%] rounded-2xl px-3 py-2 text-sm",
+                        "max-w-[85%] rounded-2xl px-3 py-2 text-sm sm:max-w-[80%]",
                         mine
                           ? "bg-[var(--primary)] text-white"
                           : "bg-[var(--surface-2)] text-[var(--foreground)]"
@@ -251,8 +296,13 @@ export function ChatPanel({
                       {!mine ? (
                         <p className="mb-1 text-[11px] opacity-70">{senderName(m)}</p>
                       ) : null}
-                      <p className="whitespace-pre-wrap">{m.body}</p>
-                      <p className={cn("mt-1 text-[10px]", mine ? "text-white/70" : "text-[var(--muted)]")}>
+                      <p className="whitespace-pre-wrap break-words">{m.body}</p>
+                      <p
+                        className={cn(
+                          "mt-1 text-[10px]",
+                          mine ? "text-white/70" : "text-[var(--muted)]"
+                        )}
+                      >
                         {formatDateTime(m.createdAt)}
                       </p>
                     </div>
@@ -262,20 +312,27 @@ export function ChatPanel({
               <div ref={bottomRef} />
             </div>
 
-            <form
-              onSubmit={send}
-              className="flex gap-2 border-t border-[var(--border)] p-3"
-            >
-              <Input
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                placeholder="Type a message..."
-                disabled={!activeId || sending}
-              />
-              <Button type="submit" disabled={!activeId || sending || !text.trim()}>
-                Send
-              </Button>
-            </form>
+            {readOnly ? (
+              <div className="border-t border-[var(--border)] p-3 text-xs text-[var(--muted)]">
+                Admin oversight is read-only. Participants continue the conversation from their Chat
+                page.
+              </div>
+            ) : (
+              <form
+                onSubmit={send}
+                className="flex gap-2 border-t border-[var(--border)] p-3"
+              >
+                <Input
+                  value={text}
+                  onChange={(e) => setText(e.target.value)}
+                  placeholder="Type a message..."
+                  disabled={!activeId || sending}
+                />
+                <Button type="submit" disabled={!activeId || sending || !text.trim()}>
+                  Send
+                </Button>
+              </form>
+            )}
           </Card>
         </div>
       ) : null}

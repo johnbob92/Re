@@ -16,14 +16,27 @@ export async function GET() {
   return withAuth(["recruiter", "candidate", "admin"], async (user) => {
     assertCan(user.role, "chat.use");
 
-    const filter: Record<string, unknown> = {};
-    if (user.role === "recruiter") filter.recruiterId = user.id;
-    if (user.role === "candidate") filter.candidateUserId = user.id;
-    if (user.role === "admin") filter.adminId = user.id;
-
-    const threads = await ChatThread.find(filter)
-      .sort({ lastMessageAt: -1, updatedAt: -1 })
-      .lean();
+    let threads;
+    if (user.role === "recruiter") {
+      threads = await ChatThread.find({ recruiterId: user.id })
+        .sort({ lastMessageAt: -1, updatedAt: -1 })
+        .lean();
+    } else if (user.role === "candidate") {
+      threads = await ChatThread.find({ candidateUserId: user.id })
+        .sort({ lastMessageAt: -1, updatedAt: -1 })
+        .lean();
+    } else {
+      // Admin: threads tagged with adminId, plus any involving their candidates
+      const candidateUsers = await CandidateProfile.find({ adminId: user.id })
+        .select("userId")
+        .lean();
+      const candidateUserIds = candidateUsers.map((c) => c.userId);
+      threads = await ChatThread.find({
+        $or: [{ adminId: user.id }, { candidateUserId: { $in: candidateUserIds } }],
+      })
+        .sort({ lastMessageAt: -1, updatedAt: -1 })
+        .lean();
+    }
 
     const recruiterIds = [...new Set(threads.map((t) => String(t.recruiterId)))];
     const candidateIds = [...new Set(threads.map((t) => String(t.candidateUserId)))];

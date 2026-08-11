@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { jsonError, jsonOk, toObject, withAuth } from "@/lib/api";
-import { ChatMessage, ChatThread } from "@/models";
+import { CandidateProfile, ChatMessage, ChatThread } from "@/models";
 import { assertCan } from "@/lib/permissions";
 import { notifyUser } from "@/lib/notify";
 
@@ -10,12 +10,13 @@ async function getAccessibleThread(threadId: string, userId: string, role: strin
   if (!thread) return null;
   if (role === "recruiter" && String(thread.recruiterId) !== userId) return null;
   if (role === "candidate" && String(thread.candidateUserId) !== userId) return null;
-  if (
-    role === "admin" &&
-    thread.adminId &&
-    String(thread.adminId) !== userId
-  ) {
-    return null;
+  if (role === "admin") {
+    if (thread.adminId && String(thread.adminId) === userId) return thread;
+    const owned = await CandidateProfile.exists({
+      userId: thread.candidateUserId,
+      adminId: userId,
+    });
+    if (!owned) return null;
   }
   return thread;
 }
@@ -62,6 +63,9 @@ export async function POST(
 ) {
   return withAuth(["recruiter", "candidate", "admin"], async (user) => {
     assertCan(user.role, "chat.use");
+    if (user.role === "admin") {
+      return jsonError("Admin chat oversight is read-only", 403);
+    }
     const { id } = await context.params;
     const thread = await getAccessibleThread(id, user.id, user.role);
     if (!thread) return jsonError("Thread not found", 404);

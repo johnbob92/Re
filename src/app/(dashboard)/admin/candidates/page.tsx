@@ -261,7 +261,9 @@ export default function AdminCandidatesPage() {
       >
         {filtered.map((c) => (
           <tr key={c._id}>
-            <Td className="font-medium">{c.name}</Td>
+            <Td sticky className="font-medium">
+              {c.name}
+            </Td>
             <Td>{ageFromBirthday(c.birthday) ?? "—"}</Td>
             <Td>{c.location || "—"}</Td>
             <Td>{c.experienceYears ?? 0}y</Td>
