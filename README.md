@@ -143,6 +143,8 @@ Rate limiting: in-memory by default; set `UPSTASH_REDIS_REST_URL` + `UPSTASH_RED
 
 Mobile: hamburger drawer + sticky first table column + chat list/detail split on small screens.
 
+Auth/theme boot: `/api/auth/me` is a soft 200 probe (`user: null` when logged out). Theme reads localStorage after mount + a pre-paint boot script to avoid hydration mismatch noise.
+
 ## Scripts
 
 ```bash

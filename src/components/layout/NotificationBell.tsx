@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { formatDateTime } from "@/lib/utils/dates";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface InboxItem {
   _id: string;
@@ -17,12 +18,13 @@ interface InboxItem {
 }
 
 export function NotificationBell() {
+  const { user, loading } = useAuth();
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<InboxItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
   async function load() {
-    const res = await fetch("/api/inbox", { cache: "no-store" });
+    const res = await fetch("/api/inbox", { cache: "no-store", credentials: "same-origin" });
     if (!res.ok) return;
     const data = await res.json();
     setItems(data.items || []);
@@ -30,10 +32,15 @@ export function NotificationBell() {
   }
 
   useEffect(() => {
+    if (loading || !user) {
+      setItems([]);
+      setUnreadCount(0);
+      return;
+    }
     void load();
     const id = window.setInterval(() => void load(), 30_000);
     return () => window.clearInterval(id);
-  }, []);
+  }, [user, loading]);
 
   async function markAllRead() {
     await fetch("/api/inbox", {

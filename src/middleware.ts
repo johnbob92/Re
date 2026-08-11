@@ -7,6 +7,8 @@ const PUBLIC = [
   "/register",
   "/api/auth/login",
   "/api/auth/register",
+  "/api/auth/me",
+  "/api/auth/logout",
   "/api/seed",
   "/api/uploads",
   "/api/integrations/calendly/webhook",

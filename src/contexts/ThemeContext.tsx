@@ -46,27 +46,48 @@ function readStoredColor(): ColorTheme {
   return saved && COLOR_THEMES.includes(saved) ? saved : "ocean";
 }
 
+function resolveMode(mode: ThemeMode): "light" | "dark" {
+  if (mode === "auto") return isNightLocal() ? "dark" : "light";
+  return mode;
+}
+
+function applyToDocument(mode: ThemeMode, colorTheme: ColorTheme) {
+  if (typeof document === "undefined") return;
+  const next = resolveMode(mode);
+  document.documentElement.dataset.theme = next;
+  document.documentElement.dataset.color = colorTheme;
+  document.documentElement.classList.toggle("dark", next === "dark");
+  return next;
+}
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [mode, setModeState] = useState<ThemeMode>(readStoredMode);
-  const [colorTheme, setColorThemeState] = useState<ColorTheme>(readStoredColor);
-  const [resolvedMode, setResolvedMode] = useState<"light" | "dark">(() =>
-    mode === "auto" ? (isNightLocal() ? "dark" : "light") : mode
-  );
+  // SSR + first client paint use stable defaults to avoid hydration mismatch.
+  // localStorage is applied after mount (and also by the layout boot script).
+  const [mode, setModeState] = useState<ThemeMode>("auto");
+  const [colorTheme, setColorThemeState] = useState<ColorTheme>("ocean");
+  const [resolvedMode, setResolvedMode] = useState<"light" | "dark">("light");
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    const compute = () => {
-      const next =
-        mode === "auto" ? (isNightLocal() ? "dark" : "light") : mode;
-      setResolvedMode(next);
-      document.documentElement.dataset.theme = next;
-      document.documentElement.dataset.color = colorTheme;
-      document.documentElement.classList.toggle("dark", next === "dark");
-    };
+    const storedMode = readStoredMode();
+    const storedColor = readStoredColor();
+    setModeState(storedMode);
+    setColorThemeState(storedColor);
+    const next = applyToDocument(storedMode, storedColor) || "light";
+    setResolvedMode(next);
+    setReady(true);
+  }, []);
 
+  useEffect(() => {
+    if (!ready) return;
+    const compute = () => {
+      const next = applyToDocument(mode, colorTheme) || "light";
+      setResolvedMode(next);
+    };
     compute();
     const id = window.setInterval(compute, 60_000);
     return () => window.clearInterval(id);
-  }, [mode, colorTheme]);
+  }, [mode, colorTheme, ready]);
 
   const setMode = useCallback((next: ThemeMode) => {
     setModeState(next);
