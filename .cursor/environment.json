@@ -1,0 +1,17 @@
+{
+  "name": "HireFlow",
+  "install": "bash .cursor/install.sh",
+  "terminals": [
+    {
+      "name": "dev",
+      "command": "npm run dev",
+      "description": "Next.js dev server for HireFlow on http://localhost:3000 (frontend + API routes, in-memory MongoDB auto-seeds demo data on first request)."
+    }
+  ],
+  "ports": [
+    {
+      "name": "web",
+      "port": 3000
+    }
+  ]
+}
